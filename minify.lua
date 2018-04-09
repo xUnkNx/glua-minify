@@ -3200,6 +3200,22 @@ local function usageError()
 			"    find-replacable ones to aide in reverse engineering minified code.\n", 0)
 end
 
+-- Enable this file to be used as a module:
+-- If it gets loaded via require(), return a module table with exported entities
+if debug.getinfo(2, "n").name == "require" then
+	return {
+		AddVariableInfo = AddVariableInfo,
+		BeautifyVariables = BeautifyVariables,
+		CreateLuaParser = CreateLuaParser,
+		CreateLuaTokenStream = CreateLuaTokenStream,
+		FormatAst = FormatAst,
+		GlobalRenameIgnore = GlobalRenameIgnore,
+		MinifyVariables = MinifyVariables,
+		PrintAst = PrintAst,
+		StripAst = StripAst,
+	}
+end
+
 local args = {...}
 if #args ~= 2 then
 	usageError()
