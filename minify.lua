@@ -1858,8 +1858,8 @@ local function AddVariableInfo(ast)
 	return globalVars, popScope()
 end
 
--- Prints out an AST to a string
-local function PrintAst(ast)
+-- Prints out an AST to stdout, or emits it by appending to a table
+local function PrintAst(ast, tbl_out)
 
 	local printStat, printExpr;
 
@@ -1867,8 +1867,13 @@ local function PrintAst(ast)
 		if not tk.LeadingWhite or not tk.Source then
 			error("Bad token: "..FormatTable(tk))
 		end
-		io.write(tk.LeadingWhite)
-		io.write(tk.Source)
+		if tbl_out then
+			table.insert(tbl_out, tk.LeadingWhite)
+			table.insert(tbl_out, tk.Source)
+		else
+			io.write(tk.LeadingWhite)
+			io.write(tk.Source)
+		end
 	end
 
 	printExpr = function(expr)
@@ -2128,6 +2133,13 @@ local function PrintAst(ast)
 	end
 
 	printStat(ast)
+end
+
+-- Get an actual string representation of the AST
+local function AstToString(ast)
+	local output = {}
+	PrintAst(ast, output)
+	return table.concat(output)
 end
 
 -- Adds / removes whitespace in an AST to put it into a "standard formatting"
@@ -3205,6 +3217,7 @@ end
 if debug.getinfo(2, "n").name == "require" then
 	return {
 		AddVariableInfo = AddVariableInfo,
+		AstToString = AstToString,
 		BeautifyVariables = BeautifyVariables,
 		CreateLuaParser = CreateLuaParser,
 		CreateLuaTokenStream = CreateLuaTokenStream,
