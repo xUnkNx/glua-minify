@@ -3114,12 +3114,15 @@ end
 --]]
 
 local function BeautifyVariables(globalScope, rootScope)
+	-- externalGlobals isn't used anywhere, so this setup seems pointless
+	--[[
 	local externalGlobals = {}
 	for _, var in pairs(globalScope) do
 		if not var.AssignedTo then
 			externalGlobals[var.Name] = true
 		end
 	end
+	--]]
 
 	local localNumber = 1
 	local globalNumber = 1
