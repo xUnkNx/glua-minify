@@ -22,20 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
-function lookupify(tb)
+local function lookupify(tb)
 	for _, v in pairs(tb) do
 		tb[v] = true
 	end
 	return tb
 end
 
-function CountTable(tb)
+local function CountTable(tb)
 	local c = 0
 	for _ in pairs(tb) do c = c + 1 end
 	return c
 end
 
-function FormatTableInt(tb, atIndent, ignoreFunc)
+local function FormatTableInt(tb, atIndent, ignoreFunc)
 	if tb.Print then
 		return tb.Print()
 	end
@@ -76,7 +76,7 @@ function FormatTableInt(tb, atIndent, ignoreFunc)
 	return out
 end
 
-function FormatTable(tb, ignoreFunc)
+local function FormatTable(tb, ignoreFunc)
 	ignoreFunc = ignoreFunc or function() 
 		return false 
 	end
@@ -156,7 +156,7 @@ local UnaryPriority = 8
 
 -- Eof, Ident, Keyword, Number, String, Symbol
 
-function CreateLuaTokenStream(text)
+local function CreateLuaTokenStream(text)
 	-- Tracking for the current position in the buffer, and
 	-- the current line / character we are on.
 	local p = 1
@@ -409,7 +409,7 @@ function CreateLuaTokenStream(text)
 	return tokenBuffer
 end
 
-function CreateLuaParser(text)
+local function CreateLuaParser(text)
 	-- Token stream and pointer into it
 	local tokens = CreateLuaTokenStream(text)
 	-- for _, tok in pairs(tokens) do
@@ -555,7 +555,7 @@ function CreateLuaParser(text)
 		end
 	end
 
-	function tableexpr()
+	local function tableexpr()
 		local obrace = expect('Symbol', '{')
 		local entries = {}
 		local separators = {}
@@ -1341,7 +1341,7 @@ function CreateLuaParser(text)
 	return block()
 end
 
-function VisitAst(ast, visitors)
+local function VisitAst(ast, visitors)
 	local ExprType = lookupify{
 		'BinopExpr'; 'UnopExpr'; 
 		'NumberLiteral'; 'StringLiteral'; 'NilLiteral'; 'BooleanLiteral'; 'VargLiteral';
@@ -1523,7 +1523,7 @@ function VisitAst(ast, visitors)
 	end
 end
 
-function AddVariableInfo(ast)
+local function AddVariableInfo(ast)
 	local globalVars = {}
 	local currentScope = nil
 
@@ -1859,7 +1859,7 @@ function AddVariableInfo(ast)
 end
 
 -- Prints out an AST to a string
-function PrintAst(ast)
+local function PrintAst(ast)
 
 	local printStat, printExpr;
 

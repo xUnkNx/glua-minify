@@ -3,7 +3,6 @@
 
 codes = true
 ignore = {
-	"11[13]",	-- ignore setting globals (namespace pollution) and "undefined variable" warnings
 	"21[123]",	-- unused [loop] variables and (function) arguments
 	"241",		-- variable is mutated but never accessed
 	"311",		-- value assigned to variable is overwritten before use
