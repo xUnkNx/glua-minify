@@ -12,6 +12,14 @@ local function unminify(ast, global_scope, root_scope)
 	LuaMinify.FormatAst(ast)
 end
 
+-- wrappers that work with only the AST (at the cost of reparsing the var info)
+local function _minify(ast)
+	minify(ast, LuaMinify.AddVariableInfo(ast))
+end
+local function _unminify(ast)
+	unminify(ast, LuaMinify.AddVariableInfo(ast))
+end
+
 -- Test basic functionality: parse Lua code snippet (into AST) and reformat it
 function test_basics()
 	-- two keywords
@@ -29,13 +37,11 @@ function test_basics()
 	end]]
 	ast = LuaMinify.CreateLuaParser(source)
 	lu.assertEquals(LuaMinify.AstToString(ast), source)
-
-	local global_scope, root_scope = LuaMinify.AddVariableInfo(ast)
-	minify(ast, global_scope, root_scope)
+	_minify(ast)
 	lu.assertEquals(LuaMinify.AstToString(ast), "function a(b)return b end")
 
 	-- now unminify() again
-	unminify(ast, global_scope, root_scope)
+	_unminify(ast)
 	lu.assertEquals(LuaMinify.AstToString(ast), [[
 
 function G_1(L_1_arg1)
