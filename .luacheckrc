@@ -3,7 +3,6 @@
 
 codes = true
 ignore = {
-	"542",		-- empty if branch
 	"61[24]",	-- ignore whitespace issues
 }
 

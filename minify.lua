@@ -22,6 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ]]
 
+-- eyecandy to increase readability for empty if branches and keep luacheck happy
+local function do_nothing() end
+
 local function lookupify(tb)
 	for _, v in pairs(tb) do
 		tb[v] = true
@@ -47,7 +50,7 @@ local function FormatTableInt(tb, atIndent, ignoreFunc)
 		if type(v) ~= 'function' and not ignoreFunc(k) then
 			out = out..(useNewlines and baseIndent or '')
 			if type(k) == 'number' then
-				--nothing to do
+				do_nothing()
 			elseif type(k) == 'string' and k:match("^[A-Za-z_][A-Za-z0-9_]*$") then 
 				out = out..k.." = "
 			elseif type(k) == 'string' then
@@ -1407,7 +1410,7 @@ local function VisitAst(ast, visitors)
 			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or 
 			expr.Type == 'VargLiteral' 
 		then
-			-- No children to visit, single token literals
+			do_nothing() -- No children to visit, single token literals
 		elseif expr.Type == 'FieldExpr' then
 			visitExpr(expr.Base)
 		elseif expr.Type == 'IndexExpr' then
@@ -1425,7 +1428,7 @@ local function VisitAst(ast, visitors)
 		elseif expr.Type == 'FunctionLiteral' then
 			visitStat(expr.Body)
 		elseif expr.Type == 'VariableExpr' then
-			-- No children to visit
+			do_nothing() -- No children to visit
 		elseif expr.Type == 'ParenExpr' then
 			visitExpr(expr.Expression)
 		elseif expr.Type == 'TableLiteral' then
@@ -1457,7 +1460,7 @@ local function VisitAst(ast, visitors)
 				visitStat(ch)
 			end
 		elseif stat.Type == 'BreakStat' then
-			-- No children to visit
+			do_nothing() -- No children to visit
 		elseif stat.Type == 'ReturnStat' then
 			for _, expr in pairs(stat.ExprList) do
 				visitExpr(expr)
@@ -2181,9 +2184,7 @@ local function FormatAst(ast)
 		if expr.Type == 'BinopExpr' then
 			formatExpr(expr.Lhs)
 			formatExpr(expr.Rhs)
-			if expr.Token_Op.Source == '..' then
-				-- No padding on ..
-			else
+			if expr.Token_Op.Source ~= '..' then -- No padding on ..
 				padExpr(expr.Rhs)
 				padToken(expr.Token_Op)
 			end
@@ -2194,7 +2195,7 @@ local function FormatAst(ast)
 			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or 
 			expr.Type == 'VargLiteral' 
 		then
-			-- Nothing to do
+			do_nothing()
 			--(expr.Token)
 		elseif expr.Type == 'FieldExpr' then
 			formatExpr(expr.Base)
@@ -2208,11 +2209,12 @@ local function FormatAst(ast)
 		elseif expr.Type == 'MethodExpr' or expr.Type == 'CallExpr' then
 			formatExpr(expr.Base)
 			if expr.Type == 'MethodExpr' then
+				do_nothing()
 				--(expr.Token_Colon)
 				--(expr.Method)
 			end
 			if expr.FunctionArguments.CallType == 'StringCall' then
-				--(expr.FunctionArguments.Token)
+				do_nothing() --(expr.FunctionArguments.Token)
 			elseif expr.FunctionArguments.CallType == 'ArgCall' then
 				--(expr.FunctionArguments.Token_OpenParen)
 				for index, argExpr in pairs(expr.FunctionArguments.ArgList) do
@@ -2220,10 +2222,12 @@ local function FormatAst(ast)
 					if index > 1 then
 						padExpr(argExpr)
 					end
+					--[[
 					local sep = expr.FunctionArguments.Token_CommaList[index]
 					if sep then
 						--(sep)
 					end
+					--]]
 				end
 				--(expr.FunctionArguments.Token_CloseParen)
 			elseif expr.FunctionArguments.CallType == 'TableCall' then
@@ -2237,26 +2241,26 @@ local function FormatAst(ast)
 				if index > 1 then
 					padToken(arg)
 				end
+				--[[
 				local comma = expr.Token_ArgCommaList[index]
 				if comma then
 					--(comma)
 				end
+				--]]
 			end
 			--(expr.Token_CloseParen)
 			formatBody(expr.Token_CloseParen, expr.Body, expr.Token_End)
 		elseif expr.Type == 'VariableExpr' then
-			--(expr.Token)
+			do_nothing() --(expr.Token)
 		elseif expr.Type == 'ParenExpr' then
 			formatExpr(expr.Expression)
 			--(expr.Token_OpenParen)
 			--(expr.Token_CloseParen)
 		elseif expr.Type == 'TableLiteral' then
 			--(expr.Token_OpenBrace)
-			if #expr.EntryList == 0 then
-				-- Nothing to do
-			else
+			if #expr.EntryList > 0 then
 				indent()
-				for index, entry in pairs(expr.EntryList) do
+				for _, entry in pairs(expr.EntryList) do
 					if entry.EntryType == 'Field' then
 						applyIndent(entry.Field)
 						padToken(entry.Token_Equals)
@@ -2275,10 +2279,12 @@ local function FormatAst(ast)
 					else
 						assert(false, "unreachable")
 					end
+					--[[
 					local sep = expr.Token_SeparatorList[index]
 					if sep then
 						--(sep)
 					end
+					--]]
 				end
 				undent()
 				applyIndent(expr.Token_CloseBrace)
@@ -2297,7 +2303,7 @@ local function FormatAst(ast)
 			end
 
 		elseif stat.Type == 'BreakStat' then
-			--(stat.Token_Break)
+			do_nothing() --(stat.Token_Break)
 
 		elseif stat.Type == 'ReturnStat' then
 			--(stat.Token_Return)
@@ -2305,27 +2311,31 @@ local function FormatAst(ast)
 				formatExpr(expr)
 				padExpr(expr)
 				if stat.Token_CommaList[index] then
-					--(stat.Token_CommaList[index])
+					do_nothing() --(stat.Token_CommaList[index])
 				end
 			end
 		elseif stat.Type == 'LocalVarStat' then
 			--(stat.Token_Local)
-			for index, var in pairs(stat.VarList) do
+			for _, var in pairs(stat.VarList) do
 				padToken(var)
+				--[[
 				local comma = stat.Token_VarCommaList[index]
 				if comma then
 					--(comma)
 				end
+				--]]
 			end
 			if stat.Token_Equals then
 				padToken(stat.Token_Equals)
-				for index, expr in pairs(stat.ExprList) do
+				for _, expr in pairs(stat.ExprList) do
 					formatExpr(expr)
 					padExpr(expr)
+					--[[
 					local comma = stat.Token_ExprCommaList[index]
 					if comma then
 						--(comma)
 					end
+					--]]
 				end
 			end
 		elseif stat.Type == 'LocalFunctionStat' then
@@ -2337,10 +2347,12 @@ local function FormatAst(ast)
 				if index > 1 then
 					padToken(arg)
 				end
+				--[[
 				local comma = stat.FunctionStat.Token_ArgCommaList[index]
 				if comma then
 					--(comma)
 				end
+				--]]
 			end
 			--(stat.FunctionStat.Token_CloseParen)
 			formatBody(stat.FunctionStat.Token_CloseParen, stat.FunctionStat.Body, stat.FunctionStat.Token_End)
@@ -2350,20 +2362,24 @@ local function FormatAst(ast)
 				if index == 1 then
 					padToken(part)
 				end
+				--[[
 				local sep = stat.Token_NameChainSeparator[index]
 				if sep then
 					--(sep)
 				end
+				--]]
 			end
 			--(stat.Token_OpenParen)
 			for index, arg in pairs(stat.ArgList) do
 				if index > 1 then
 					padToken(arg)
 				end
+				--[[
 				local comma = stat.Token_ArgCommaList[index]
 				if comma then
 					--(comma)
 				end
+				--]]
 			end
 			--(stat.Token_CloseParen)
 			formatBody(stat.Token_CloseParen, stat.Body, stat.Token_End)
@@ -2374,41 +2390,49 @@ local function FormatAst(ast)
 			padExpr(stat.Condition)
 		elseif stat.Type == 'GenericForStat' then
 			--(stat.Token_For)
-			for index, var in pairs(stat.VarList) do
+			for _, var in pairs(stat.VarList) do
 				padToken(var)
+				--[[
 				local sep = stat.Token_VarCommaList[index]
 				if sep then
 					--(sep)
 				end
+				--]]
 			end
 			padToken(stat.Token_In)
-			for index, expr in pairs(stat.GeneratorList) do
+			for _, expr in pairs(stat.GeneratorList) do
 				formatExpr(expr)
 				padExpr(expr)
+				--[[
 				local sep = stat.Token_GeneratorCommaList[index]
 				if sep then
 					--(sep)
 				end
+				--]]
 			end
 			padToken(stat.Token_Do)
 			formatBody(stat.Token_Do, stat.Body, stat.Token_End)
 		elseif stat.Type == 'NumericForStat' then
 			--(stat.Token_For)
-			for index, var in pairs(stat.VarList) do
+			for _, var in pairs(stat.VarList) do
 				padToken(var)
+				--[[
 				local sep = stat.Token_VarCommaList[index]
 				if sep then
 					--(sep)
 				end
+				--]]
 			end
 			padToken(stat.Token_Equals)
-			for index, expr in pairs(stat.RangeList) do
+			for _, expr in pairs(stat.RangeList) do
 				formatExpr(expr)
 				padExpr(expr)
+				--[[
 				local sep = stat.Token_RangeCommaList[index]
 				if sep then
 					--(sep)
 				end
+				--]]
 			end
 			padToken(stat.Token_Do)
 			formatBody(stat.Token_Do, stat.Body, stat.Token_End)	
@@ -2453,19 +2477,23 @@ local function FormatAst(ast)
 				if index > 1 then
 					padExpr(ex)
 				end
+				--[[
 				local sep = stat.Token_LhsSeparatorList[index]
 				if sep then
 					--(sep)
 				end
+				--]]
 			end
 			padToken(stat.Token_Equals)
-			for index, ex in pairs(stat.Rhs) do
+			for _, ex in pairs(stat.Rhs) do
 				formatExpr(ex)
 				padExpr(ex)
+				--[[
 				local sep = stat.Token_RhsSeparatorList[index]
 				if sep then
 					--(sep)
 				end
+				--]]
 			end
 		else
 			assert(false, "unreachable")
