@@ -3,7 +3,6 @@
 
 codes = true
 ignore = {
-	"4[23][12]",-- shadowing upvalues and definitions of variables / arguments
 	"542",		-- empty if branch
 	"61[24]",	-- ignore whitespace issues
 }

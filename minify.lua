@@ -408,9 +408,9 @@ local function CreateLuaTokenStream(text)
 	return tokenBuffer
 end
 
-local function CreateLuaParser(text)
+local function CreateLuaParser(_text)
 	-- Token stream and pointer into it
-	local tokens = CreateLuaTokenStream(text)
+	local tokens = CreateLuaTokenStream(_text)
 	-- for _, tok in pairs(tokens) do
 	-- 	print(tok.Type..": "..tok.Source)
 	-- end
@@ -2291,9 +2291,9 @@ local function FormatAst(ast)
 
 	formatStat = function(stat)
 		if stat.Type == 'StatList' then
-			for _, stat in pairs(stat.StatementList) do
-				formatStat(stat)
-				applyIndent(stat:GetFirstToken())
+			for _, _stat in pairs(stat.StatementList) do
+				formatStat(_stat)
+				applyIndent(_stat:GetFirstToken())
 			end
 
 		elseif stat.Type == 'BreakStat' then
@@ -2867,7 +2867,7 @@ local function indexToVarName(index)
 	index = (index - d) / #VarStartDigits
 	id = id..VarStartDigits[d+1]
 	while index > 0 do
-		local d = index % #VarDigits
+		d = index % #VarDigits
 		index = (index - d) / #VarDigits
 		id = id..VarDigits[d+1]
 	end
@@ -3154,8 +3154,8 @@ local function BeautifyVariables(globalScope, rootScope)
 			setVarName(var, name)
 			localNumber = localNumber + 1
 		end
-		for _, scope in pairs(scope.ChildScopeList) do
-			modify(scope)
+		for _, child in pairs(scope.ChildScopeList) do
+			modify(child)
 		end
 	end
 	modify(rootScope)
@@ -3182,10 +3182,6 @@ if not sourceFile then
 	error("Could not open the input file `" .. args[2] .. "`", 0)
 end
 
-local data = sourceFile:read('*all')
-local ast = CreateLuaParser(data)
-local global_scope, root_scope = AddVariableInfo(ast)
-
 local function minify(ast, global_scope, root_scope)
 	MinifyVariables(global_scope, root_scope)
 	StripAst(ast)
@@ -3197,6 +3193,10 @@ local function beautify(ast, global_scope, root_scope)
 	FormatAst(ast)
 	PrintAst(ast)
 end
+
+local data = sourceFile:read('*all')
+local ast = CreateLuaParser(data)
+local global_scope, root_scope = AddVariableInfo(ast)
 
 if args[1] == 'minify' then
 	minify(ast, global_scope, root_scope)
