@@ -2883,7 +2883,7 @@ local function genNextVarName()
 	return indexToVarName(varToUse)
 end
 local function genVarName()
-	local varName = ''
+	local varName
 	repeat
 		varName = genNextVarName()
 	until not Keywords[varName]
@@ -2925,7 +2925,7 @@ local function MinifyVariables(globalScope, rootScope)
 	local nextFreeNameIndex = 0
 	for _, var in pairs(globalScope) do
 		if var.AssignedTo then
-			local varName = ''
+			local varName
 			repeat
 				varName = indexToVarName(nextFreeNameIndex)
 				nextFreeNameIndex = nextFreeNameIndex + 1
@@ -2938,7 +2938,7 @@ local function MinifyVariables(globalScope, rootScope)
 	rootScope.FirstFreeName = nextFreeNameIndex
 	local function doRenameScope(scope)
 		for _, var in pairs(scope.VariableList) do
-			local varName = ''
+			local varName
 			repeat
 				varName = indexToVarName(scope.FirstFreeName)
 				scope.FirstFreeName = scope.FirstFreeName + 1
