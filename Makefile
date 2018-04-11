@@ -43,6 +43,11 @@ unittests: luaunit.lua
 	@echo
 	@echo Running unit tests:
 	$(LUA) -lluacov tests.lua -v
+	# now repeat the tests a second time, with a minified version of luaunit!
+	mv luaunit.lua luaunit.lua.orig
+	$(LUA) ./minify.lua minify luaunit.lua.orig > luaunit.lua
+	$(LUA) tests.lua -v
+	mv -f luaunit.lua.orig luaunit.lua
 
 luaunit.lua:
 	# retrieve tagged release of luaunit.lua from github
@@ -56,3 +61,5 @@ coverage:
 	# normal operation
 	$(LUA) -lluacov ./minify.lua minify minify.lua > /dev/null
 	$(LUA) -lluacov ./minify.lua unminify minify.lua > /dev/null
+	$(LUA) -lluacov ./minify.lua minify luaunit.lua > /dev/null
+	$(LUA) -lluacov ./minify.lua unminify luaunit.lua > /dev/null
