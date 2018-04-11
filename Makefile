@@ -33,3 +33,12 @@ selftest:
 	diff -u minify1.out minify6.out
 
 	rm minify*.out unminify*.out
+
+coverage:
+	# usage help (invocation with no arguments)
+	$(LUA) -lluacov ./minify.lua > /dev/null 2>&1 || true
+	# input file error
+	$(LUA) -lluacov ./minify.lua minify non.existent > /dev/null 2>&1 || true
+	# normal operation
+	$(LUA) -lluacov ./minify.lua minify minify.lua > /dev/null
+	$(LUA) -lluacov ./minify.lua unminify minify.lua > /dev/null

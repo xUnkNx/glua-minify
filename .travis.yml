@@ -14,10 +14,14 @@ env:
 
 install:
   - source .travis/setenv_lua.sh
+  - luarocks install luacov-coveralls
 
 script:
   - lua -v
-  - make LUA=lua
+  - make LUA=lua && make coverage LUA=lua
+
+after_success:
+  - luacov-coveralls -v --include %./minify.lua
 
 # turn off email notifications
 notifications:
