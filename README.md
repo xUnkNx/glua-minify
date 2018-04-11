@@ -1,5 +1,9 @@
+This is NiteHawk's fork of https://github.com/stravant/lua-minify.  
+[![License](http://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 
-#A Lua tool for minifying and reverse engineering minified Lua code
+---
+
+## A Lua tool for minifying and reverse engineering minified Lua code
 
 Usage:
 
