@@ -1,6 +1,11 @@
 # Makefile
 LUA ?= lua
 
+tests: luacheck selftest
+
+luacheck:
+	luacheck minify.lua
+
 selftest:
 	# Run various transformations on the program itself.
 	# They should all represent the same AST, and thus end up
