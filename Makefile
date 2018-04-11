@@ -4,7 +4,7 @@ LUA ?= lua
 tests: luacheck selftest unittests
 
 luacheck:
-	luacheck minify.lua
+	luacheck minify.lua tests.lua
 
 selftest:
 	# Run various transformations on the program itself.

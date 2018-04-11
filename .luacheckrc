@@ -10,4 +10,7 @@ files = {
 	["minify.lua"] = {
 		ignore = {"EscapeForCharacter", "GlobalRenameIgnore"},
 	},
+	["tests.lua"] = {
+		ignore = {"test[%a_]+"}
+	}
 }
