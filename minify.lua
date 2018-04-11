@@ -213,7 +213,7 @@ local function CreateLuaTokenStream(text)
 				error("Unfinished long string.")
 			elseif c == ']' then
 				local done = true -- Until contested
-				for i = 1, eqcount do
+				for _ = 1, eqcount do
 					if look() == '=' then
 						p = p + 1
 					else
@@ -1369,7 +1369,7 @@ local function VisitAst(ast, visitors)
 	}
 
 	-- Check for typos in visitor construction
-	for visitorSubject, visitor in pairs(visitors) do
+	for visitorSubject, _ in pairs(visitors) do
 		if not StatType[visitorSubject] and not ExprType[visitorSubject] then
 			error("Invalid visitor target: `"..visitorSubject.."`")
 		end
@@ -1416,7 +1416,7 @@ local function VisitAst(ast, visitors)
 		elseif expr.Type == 'MethodExpr' or expr.Type == 'CallExpr' then
 			visitExpr(expr.Base)
 			if expr.FunctionArguments.CallType == 'ArgCall' then
-				for index, argExpr in pairs(expr.FunctionArguments.ArgList) do
+				for _, argExpr in pairs(expr.FunctionArguments.ArgList) do
 					visitExpr(argExpr)
 				end
 			elseif expr.FunctionArguments.CallType == 'TableCall' then
@@ -1429,7 +1429,7 @@ local function VisitAst(ast, visitors)
 		elseif expr.Type == 'ParenExpr' then
 			visitExpr(expr.Expression)
 		elseif expr.Type == 'TableLiteral' then
-			for index, entry in pairs(expr.EntryList) do
+			for _, entry in pairs(expr.EntryList) do
 				if entry.EntryType == 'Field' then
 					visitExpr(entry.Value)
 				elseif entry.EntryType == 'Index' then
@@ -1453,18 +1453,18 @@ local function VisitAst(ast, visitors)
 			return
 		end
 		if stat.Type == 'StatList' then
-			for index, ch in pairs(stat.StatementList) do
+			for _, ch in pairs(stat.StatementList) do
 				visitStat(ch)
 			end
 		elseif stat.Type == 'BreakStat' then
 			-- No children to visit
 		elseif stat.Type == 'ReturnStat' then
-			for index, expr in pairs(stat.ExprList) do
+			for _, expr in pairs(stat.ExprList) do
 				visitExpr(expr)
 			end
 		elseif stat.Type == 'LocalVarStat' then
 			if stat.Token_Equals then
-				for index, expr in pairs(stat.ExprList) do
+				for _, expr in pairs(stat.ExprList) do
 					visitExpr(expr)
 				end
 			end
@@ -1476,12 +1476,12 @@ local function VisitAst(ast, visitors)
 			visitStat(stat.Body)
 			visitExpr(stat.Condition)
 		elseif stat.Type == 'GenericForStat' then
-			for index, expr in pairs(stat.GeneratorList) do
+			for _, expr in pairs(stat.GeneratorList) do
 				visitExpr(expr)
 			end
 			visitStat(stat.Body)
 		elseif stat.Type == 'NumericForStat' then
-			for index, expr in pairs(stat.RangeList) do
+			for _, expr in pairs(stat.RangeList) do
 				visitExpr(expr)
 			end
 			visitStat(stat.Body)
@@ -1502,10 +1502,10 @@ local function VisitAst(ast, visitors)
 		elseif stat.Type == 'CallExprStat' then
 			visitExpr(stat.Expression)
 		elseif stat.Type == 'AssignmentStat' then
-			for index, ex in pairs(stat.Lhs) do
+			for _, ex in pairs(stat.Lhs) do
 				visitExpr(ex)
 			end
-			for index, ex in pairs(stat.Rhs) do
+			for _, ex in pairs(stat.Rhs) do
 				visitExpr(ex)
 			end
 		else
@@ -1696,7 +1696,7 @@ local function AddVariableInfo(ast)
 					{ Type = 'Argument';  Index = index; })
 			end
 		end;
-		Post = function(expr)
+		Post = function()
 			popScope()
 		end;
 	}
@@ -1710,10 +1710,10 @@ local function AddVariableInfo(ast)
 	end
 	visitor.StatList = {
 		-- StatList adds a new scope
-		Pre = function(stat)
+		Pre = function()
 			pushScope()
 		end;
-		Post = function(stat)
+		Post = function()
 			popScope()
 		end;
 	}
@@ -2170,7 +2170,7 @@ local function FormatAst(ast)
 		padToken(expr:GetFirstToken())
 	end
 
-	local function formatBody(openToken, bodyStat, closeToken)
+	local function formatBody(openToken, bodyStat, closeToken) -- luacheck: ignore 212
 		indent()
 		formatStat(bodyStat)
 		undent()
