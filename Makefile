@@ -1,7 +1,7 @@
 # Makefile
 LUA ?= lua
 
-tests: luacheck selftest
+tests: luacheck selftest unittests
 
 luacheck:
 	luacheck minify.lua
@@ -38,6 +38,15 @@ selftest:
 	diff -u minify1.out minify6.out
 
 	rm minify*.out unminify*.out
+
+unittests: luaunit.lua
+	@echo
+	@echo Running unit tests:
+	$(LUA) -lluacov tests.lua -v
+
+luaunit.lua:
+	# retrieve tagged release of luaunit.lua from github
+	curl -LsS --retry 5 https://github.com/bluebird75/luaunit/raw/LUAUNIT_V3_3/$@ -o $@
 
 coverage:
 	# usage help (invocation with no arguments)
