@@ -1,4 +1,5 @@
 This is NiteHawk's fork of https://github.com/stravant/lua-minify.  
+[![Build Status](https://travis-ci.org/n1tehawk/lua-minify.svg?branch=nitehawk)](https://travis-ci.org/n1tehawk/lua-minify)
 [![License](http://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 
 ---
