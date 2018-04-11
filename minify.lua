@@ -307,7 +307,6 @@ local function CreateLuaTokenStream(text)
 				break
 			end
 		end
-		local leadingWhite = text:sub(whiteStart, p-1)
 
 		-- Mark the token start
 		tokenStart = p
@@ -1098,7 +1097,6 @@ local function CreateLuaParser(text)
 	local function forstat()
 		local forKw = get()
 		local loopVars, loopVarCommas = varlist()
-		local node = {}
 		if peek().Source == '=' then
 			local eqTk = get()
 			local exprList, exprCommaList = exprlist()
@@ -1691,12 +1689,11 @@ local function AddVariableInfo(ast)
 		Pre = function(expr)
 			pushScope()
 			for index, ident in pairs(expr.ArgList) do
-				local var = addLocalVar(ident.Source, function(name)
-					ident.Source = name
-				end, {
-					Type = 'Argument';
-					Index = index;
-				})
+				addLocalVar(ident.Source,
+					function(name)
+						ident.Source = name
+					end,
+					{ Type = 'Argument';  Index = index; })
 			end
 		end;
 		Post = function(expr)
@@ -2856,7 +2853,6 @@ local function StripAst(ast)
 	stripStat(ast)
 end
 
-local idGen = 0
 local VarDigits = {}
 for i = ('a'):byte(), ('z'):byte() do table.insert(VarDigits, string.char(i)) end
 for i = ('A'):byte(), ('Z'):byte() do table.insert(VarDigits, string.char(i)) end
@@ -2877,18 +2873,6 @@ local function indexToVarName(index)
 	end
 	return id
 end
-local function genNextVarName()
-	local varToUse = idGen
-	idGen = idGen + 1
-	return indexToVarName(varToUse)
-end
-local function genVarName()
-	local varName
-	repeat
-		varName = genNextVarName()
-	until not Keywords[varName]
-	return varName
-end
 local function MinifyVariables(globalScope, rootScope)
 	-- externalGlobals is a set of global variables that have not been assigned to, that is
 	-- global variables defined "externally to the script". We are not going to be renaming 
@@ -2906,15 +2890,6 @@ local function MinifyVariables(globalScope, rootScope)
 		else
 			-- Not assigned to, external global
 			externalGlobals[var.Name] = true
-		end
-	end
-	local function temporaryRename(scope)
-		for _, var in pairs(scope.VariableList) do
-			var:Rename('_TMP_'..temporaryIndex..'_')
-			temporaryIndex = temporaryIndex + 1
-		end
-		for _, childScope in pairs(scope.ChildScopeList) do
-			temporaryRename(childScope)
 		end
 	end
 
@@ -2953,6 +2928,7 @@ local function MinifyVariables(globalScope, rootScope)
 	doRenameScope(rootScope)
 end
 
+--[[
 local function MinifyVariables_2(globalScope, rootScope)
 	-- Variable names and other names that are fixed, that we cannot use
 	-- Either these are Lua keywords, or globals that are not assigned to,
@@ -3135,6 +3111,7 @@ local function MinifyVariables_2(globalScope, rootScope)
 	--
 	--error()
 end
+--]]
 
 local function BeautifyVariables(globalScope, rootScope)
 	local externalGlobals = {}
