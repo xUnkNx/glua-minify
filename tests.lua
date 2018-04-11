@@ -59,4 +59,24 @@ function test_errors()
 		LuaMinify.CreateLuaParser, 'local function 2')
 end
 
+-- Test if parser can handle vararg functions
+function test_varargs()
+	-- pure vararg function, anonymous
+	local source = 'return function(...) end'
+	local ast = LuaMinify.CreateLuaParser(source)
+	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	-- vararg function that has additional arguments, anonymous
+	source = 'return function(a, b, ...) end'
+	ast = LuaMinify.CreateLuaParser(source)
+	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	-- pure vararg function, named
+	source = 'function foo(...) end'
+	ast = LuaMinify.CreateLuaParser(source)
+	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	-- vararg function that has additional arguments, named
+	source = 'function bar(c, d, ...) end'
+	ast = LuaMinify.CreateLuaParser(source)
+	lu.assertEquals(LuaMinify.AstToString(ast), source)
+end
+
 lu.LuaUnit:run(...)
