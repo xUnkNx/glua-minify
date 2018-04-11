@@ -188,8 +188,7 @@ local function CreateLuaTokenStream(text)
 	end
 
 	-- Error
-	local olderr = error
-	local function error(str)
+	local function _error(str)
 		local q = 1
 		local line = 1
 		local char = 1
@@ -205,7 +204,7 @@ local function CreateLuaTokenStream(text)
 		for _, token in pairs(tokenBuffer) do
 			print(token.Type.."<"..token.Source..">")
 		end
-		olderr("file<"..line..":"..char..">: "..str)
+		error("file<"..line..":"..char..">: "..str)
 	end
 
 	-- Consume a long data with equals count of `eqcount'
@@ -213,7 +212,7 @@ local function CreateLuaTokenStream(text)
 		while true do
 			local c = get()
 			if c == '' then
-				error("Unfinished long string.")
+				_error("Unfinished long string.")
 			elseif c == ']' then
 				local done = true -- Until contested
 				for _ = 1, eqcount do
@@ -327,7 +326,7 @@ local function CreateLuaTokenStream(text)
 				if c2 == '\\' then
 					local c3 = get()
 					if not(Digits[c3] or CharacterForEscape[c3]) then
-						error("Invalid Escape Sequence `"..c3.."`.")
+						_error("Invalid Escape Sequence `"..c3.."`.")
 					end
 				elseif c2 == c1 then
 					break
@@ -404,7 +403,7 @@ local function CreateLuaTokenStream(text)
 		elseif Symbols[c1] then
 			token('Symbol')
 		else
-			error("Bad symbol `"..c1.."` in source.")
+			_error("Bad symbol `"..c1.."` in source.")
 		end
 	end
 	return tokenBuffer
