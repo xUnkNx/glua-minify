@@ -766,6 +766,20 @@ local function CreateLuaParser(tokens)
 		end
 	end
 
+	local function callexpr(base)
+		return MkNode{
+			Type = 'CallExpr';
+			Base = base;
+			FunctionArguments = functionargs();
+			GetFirstToken = function(self)
+				return self.Base:GetFirstToken()
+			end;
+			GetLastToken = function(self)
+				return self.FunctionArguments:GetLastToken()
+			end;
+		}
+	end
+
 	local function primaryexpr()
 		local base = prefixexpr()
 		assert(base, "nil prefixexpr")
@@ -821,29 +835,11 @@ local function CreateLuaParser(tokens)
 					end;
 				}
 			elseif tk.Source == '{' then
-				base = MkNode{
-					Type = 'CallExpr';
-					Base = base;
-					FunctionArguments = functionargs();
-					GetFirstToken = function(self)
-						return self.Base:GetFirstToken()
-					end;
-					GetLastToken = function(self)
-						return self.FunctionArguments:GetLastToken()
-					end;
-				}
+				base = callexpr(base) -- TableCall
 			elseif tk.Source == '(' then
-				base = MkNode{
-					Type = 'CallExpr';
-					Base = base;
-					FunctionArguments = functionargs();
-					GetFirstToken = function(self)
-						return self.Base:GetFirstToken()
-					end;
-					GetLastToken = function(self)
-						return self.FunctionArguments:GetLastToken()
-					end;
-				}
+				base = callexpr(base) -- ArgCall
+			elseif tk.Type == 'String' then
+				base = callexpr(base) -- StringCall
 			else
 				return base
 			end
