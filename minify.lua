@@ -411,9 +411,13 @@ local function CreateLuaTokenStream(text)
 	return tokenBuffer
 end
 
-local function CreateLuaParser(_text)
+local function CreateLuaParser(tokens)
+	if type(tokens) == "string" then
+		-- tokenize from string first
+		tokens = CreateLuaTokenStream(tokens)
+	end
 	-- Token stream and pointer into it
-	local tokens = CreateLuaTokenStream(_text)
+	assert(type(tokens) == "table")
 	-- for _, tok in pairs(tokens) do
 	-- 	print(tok.Type..": "..tok.Source)
 	-- end

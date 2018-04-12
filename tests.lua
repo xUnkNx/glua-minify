@@ -20,6 +20,22 @@ local function _unminify(ast)
 	unminify(ast, LuaMinify.AddVariableInfo(ast))
 end
 
+-- Validate a token table against a list of strings. This attempts to match
+-- each token's (.Source) content against the corresponding list element.
+-- Note: The terminating "Eof" token always gets checked implicitly.
+local function assertTokenSequence(tokens, list)
+	lu.assertIsTable(list)
+	local len = #list
+	lu.assertIsTable(tokens)
+	lu.assertEquals(#tokens, len + 1, 'assertTokenSequence: token count mismatch')
+	for i = 1, len do
+		lu.assertEquals(tokens[i].Source, list[i], 'token #'..i..' mismatches')
+	end
+	-- check "Eof"
+	lu.assertEquals(tokens[len + 1].Type, 'Eof', 'last token isn\'t "Eof"')
+	lu.assertEquals(tokens[len + 1].Source, '', 'last token isn\'t empty')
+end
+
 -- Test basic functionality: parse Lua code snippet (into AST) and reformat it
 function test_basics()
 	-- two keywords
@@ -58,13 +74,22 @@ function test_errors()
 		LuaMinify.CreateLuaTokenStream, '\n[[')
 	lu.assertErrorMsgContains('Invalid Escape Sequence `?`.',
 		LuaMinify.CreateLuaTokenStream, '"\\?"')
+
 	-- syntax parser
+	local tokens = LuaMinify.CreateLuaTokenStream('/')
+	assertTokenSequence(tokens, {'/'})
 	lu.assertErrorMsgContains('1:1: Unexpected symbol',
-		LuaMinify.CreateLuaParser, '/')
+		LuaMinify.CreateLuaParser, tokens)
+
+	tokens = LuaMinify.CreateLuaTokenStream('foobar 4')
+	assertTokenSequence(tokens, {'foobar', '4'})
 	lu.assertErrorMsgContains('1:8: `=` expected.',
-		LuaMinify.CreateLuaParser, 'foobar 4')
+		LuaMinify.CreateLuaParser, tokens)
+
+	tokens = LuaMinify.CreateLuaTokenStream('local function 2')
+	assertTokenSequence(tokens, {'local', 'function', '2'})
 	lu.assertErrorMsgContains('1:16: Ident expected.',
-		LuaMinify.CreateLuaParser, 'local function 2')
+		LuaMinify.CreateLuaParser, tokens)
 end
 
 -- Test if parser can handle vararg functions
