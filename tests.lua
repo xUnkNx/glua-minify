@@ -120,4 +120,18 @@ function test_varargs()
 	lu.assertEquals(LuaMinify.AstToString(ast), 'function a(b,c,...)end')
 end
 
+-- Test if tokenizer handles escape sequences
+function test_escapes()
+	for _, source in ipairs{
+		[["Hello\nworld"]],
+		[["Hello\tworld"]],
+		[["Hello\32world"]],
+		[["\t\9\0\9\t"]],
+		[["don\'t \"quote\" me"]],
+	} do
+		local tokens = LuaMinify.CreateLuaTokenStream(source)
+		assertTokenSequence(tokens, {source})
+	end
+end
+
 lu.LuaUnit:run(...)
