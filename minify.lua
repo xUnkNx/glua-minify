@@ -163,7 +163,6 @@ local function CreateLuaTokenStream(text)
 	-- Tracking for the current position in the buffer, and
 	-- the current line / character we are on.
 	local p = 1
-	local length = #text
 
 	-- Output buffer for tokens
 	local tokenBuffer = {}
@@ -171,20 +170,12 @@ local function CreateLuaTokenStream(text)
 	-- Get a character, or '' if at eof
 	local function look(n)
 		n = p + (n or 0)
-		if n <= length then
-			return text:sub(n, n)
-		else
-			return ''
-		end
+		return text:sub(n, n)
 	end
 	local function get()
-		if p <= length then
-			local c = text:sub(p, p)
-			p = p + 1
-			return c
-		else
-			return ''
-		end
+		local c = text:sub(p, p)
+		p = p + 1
+		return c
 	end
 
 	-- Error
