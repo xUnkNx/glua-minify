@@ -58,6 +58,8 @@ coverage:
 	$(LUA) -lluacov ./minify.lua > /dev/null 2>&1 || true
 	# input file error
 	$(LUA) -lluacov ./minify.lua minify non.existent > /dev/null 2>&1 || true
+	# invalid command
+	$(LUA) -lluacov ./minify.lua foobar minify.lua > /dev/null 2>&1 || true
 	# normal operation
 	$(LUA) -lluacov ./minify.lua minify minify.lua > /dev/null
 	$(LUA) -lluacov ./minify.lua unminify minify.lua > /dev/null
