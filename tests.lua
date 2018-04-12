@@ -134,4 +134,31 @@ function test_escapes()
 	end
 end
 
+-- Test "string call" function invocation
+function test_stringcall()
+
+	local function assertExprIsStringCall(expr) -- expression is string call?
+		lu.assertIsTable(expr)
+		lu.assertEquals(expr.Type, "CallExpr")
+		lu.assertIsTable(expr.FunctionArguments)
+		lu.assertEquals(expr.FunctionArguments.CallType, "StringCall")
+	end
+	local function assertStmtIsStringCall(stmt) -- statement is string call?
+		lu.assertIsTable(stmt)
+		lu.assertEquals(stmt.Type, "CallExprStat")
+		assertExprIsStringCall(stmt.Expression)
+	end
+
+	local ast = LuaMinify.CreateLuaParser('print "Hello world"')
+	assertStmtIsStringCall(ast.StatementList[1])
+
+	ast = LuaMinify.CreateLuaParser('require "math"')
+	assertStmtIsStringCall(ast.StatementList[1])
+
+	ast = LuaMinify.CreateLuaParser('M = require[[mymodule]]')
+	local stmt = ast.StatementList[1]
+	lu.assertEquals(stmt.Type, "AssignmentStat")
+	assertExprIsStringCall(stmt.Rhs[1]) -- right-hand side should be string call
+end
+
 lu.LuaUnit:run(...)
