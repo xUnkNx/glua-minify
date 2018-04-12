@@ -51,17 +51,19 @@ end
 
 -- Test invalid syntax and some corner cases, mainly to improve code coverage
 function test_errors()
+	-- tokenizer
 	lu.assertErrorMsgContains('Bad symbol `$` in source.',
-		LuaMinify.CreateLuaParser, '$')
+		LuaMinify.CreateLuaTokenStream, '$')
+	lu.assertErrorMsgContains('Unfinished long string.',
+		LuaMinify.CreateLuaTokenStream, '\n[[')
+	lu.assertErrorMsgContains('Invalid Escape Sequence `?`.',
+		LuaMinify.CreateLuaTokenStream, '"\\?"')
+	-- syntax parser
 	lu.assertErrorMsgContains('1:1: Unexpected symbol',
 		LuaMinify.CreateLuaParser, '/')
-	lu.assertErrorMsgContains('Unfinished long string.',
-		LuaMinify.CreateLuaParser, '\n[[')
-	lu.assertErrorMsgContains('Invalid Escape Sequence `?`.',
-		LuaMinify.CreateLuaParser, '"\\?"')
-	lu.assertErrorMsgContains('`=` expected.',
+	lu.assertErrorMsgContains('1:8: `=` expected.',
 		LuaMinify.CreateLuaParser, 'foobar 4')
-	lu.assertErrorMsgContains('Ident expected.',
+	lu.assertErrorMsgContains('1:16: Ident expected.',
 		LuaMinify.CreateLuaParser, 'local function 2')
 end
 
