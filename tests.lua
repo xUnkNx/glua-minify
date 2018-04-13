@@ -68,11 +68,11 @@ end
 -- Test invalid syntax and some corner cases, mainly to improve code coverage
 function test_errors()
 	-- tokenizer
-	lu.assertErrorMsgContains('Bad symbol `$` in source.',
+	lu.assertErrorMsgContains('<1:1>: Bad symbol `$` in source.',
 		LuaMinify.CreateLuaTokenStream, '$')
-	lu.assertErrorMsgContains('Unfinished long string.',
+	lu.assertErrorMsgContains('<2:2>: Unfinished long string.',
 		LuaMinify.CreateLuaTokenStream, '\n[[')
-	lu.assertErrorMsgContains('Invalid Escape Sequence `?`.',
+	lu.assertErrorMsgContains('<1:4>: Invalid Escape Sequence `?`.',
 		LuaMinify.CreateLuaTokenStream, '"\\?"')
 
 	-- syntax parser

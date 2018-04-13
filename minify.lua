@@ -159,6 +159,27 @@ local UnaryPriority = 8
 
 -- Eof, Ident, Keyword, Number, String, Symbol
 
+-- decode string position to line and column number, with optional start values
+local function _decode_position(text, pos, line, col)
+	line, col = line or 1, col or 0
+	if pos > 0 then
+		if pos > text:len() then
+			pos = text:len()
+		end
+		for i = 1, pos do
+			col = col + 1
+			if text:sub(i, i) == '\n' then
+				line = line + 1
+				col = 0
+			end
+		end
+		if col == 0 then
+			col = 1
+		end
+	end
+	return line, col
+end
+
 local function CreateLuaTokenStream(text)
 	-- Tracking for the current position in the buffer, and
 	-- the current line / character we are on.
@@ -180,22 +201,11 @@ local function CreateLuaTokenStream(text)
 
 	-- Error
 	local function _error(str)
-		local q = 1
-		local line = 1
-		local char = 1
-		while q <= p do
-			if text:sub(q, q) == '\n' then
-				line = line + 1
-				char = 1
-			else
-				char = char + 1
-			end
-			q = q + 1
-		end
+		local line, col = _decode_position(text, p)
 		for _, token in pairs(tokenBuffer) do
 			print(token.Type.."<"..token.Source..">")
 		end
-		error("file<"..line..":"..char..">: "..str)
+		error("file<"..line..":"..col..">: "..str)
 	end
 
 	-- Consume a long data with equals count of `eqcount'
@@ -425,32 +435,18 @@ local function CreateLuaParser(tokens)
 	end
 
 	local function getTokenStartPosition(token)
-		local line = 1
-		local char = 0
+		local line, col = 1, 0
 		local tkNum = 1
-		while true do
+		repeat
 			local tk = tokens[tkNum]
-			local text;
-			if tk == token then
-				text = tk.LeadingWhite
-			else
-				text = tk.LeadingWhite..tk.Source
-			end
-			for i = 1, #text do
-				local c = text:sub(i, i)
-				if c == '\n' then
-					line = line + 1
-					char = 0
-				else
-					char = char + 1
-				end
-			end
-			if tk == token then
-				break
-			end
 			tkNum = tkNum + 1
-		end
-		return line..":"..(char+1)
+			local text = tk.LeadingWhite
+			if tk ~= token then
+				text = text .. tk.Source
+			end
+			line, col = _decode_position(text, #text, line, col)
+		until tk == token
+		return line..":"..(col+1)
 	end
 	local function debugMark()
 		local tk = peek()
