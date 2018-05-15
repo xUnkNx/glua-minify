@@ -832,63 +832,32 @@ local function CreateLuaParser(tokens)
 		end
 	end
 
+	-- Create a "literal" node with a given type (string)
+	local function literal(_type)
+		return MkNode{
+			Type = _type;
+			Token = get();
+			GetFirstToken = function(self)
+				return self.Token
+			end;
+			GetLastToken = function(self)
+				return self.Token
+			end;
+		}
+	end
+
 	local function simpleexpr()
 		local tk = peek()
 		if tk.Type == 'Number' then
-			return MkNode{
-				Type = 'NumberLiteral';
-				Token = get();
-				GetFirstToken = function(self)
-					return self.Token
-				end;
-				GetLastToken = function(self)
-					return self.Token
-				end;
-			}
+			return literal('NumberLiteral');
 		elseif tk.Type == 'String' then
-			return MkNode{
-				Type = 'StringLiteral';
-				Token = get();
-				GetFirstToken = function(self)
-					return self.Token
-				end;
-				GetLastToken = function(self)
-					return self.Token
-				end;
-			}
+			return literal('StringLiteral')
 		elseif tk.Source == 'nil' then
-			return MkNode{
-				Type = 'NilLiteral';
-				Token = get();
-				GetFirstToken = function(self)
-					return self.Token
-				end;
-				GetLastToken = function(self)
-					return self.Token
-				end;
-			}
+			return literal('NilLiteral')
 		elseif tk.Source == 'true' or tk.Source == 'false' then
-			return MkNode{
-				Type = 'BooleanLiteral';
-				Token = get();
-				GetFirstToken = function(self)
-					return self.Token
-				end;
-				GetLastToken = function(self)
-					return self.Token
-				end;
-			}
+			return literal('BooleanLiteral')
 		elseif tk.Source == '...' then
-			return MkNode{
-				Type = 'VargLiteral';
-				Token = get();
-				GetFirstToken = function(self)
-					return self.Token
-				end;
-				GetLastToken = function(self)
-					return self.Token
-				end;
-			}
+			return literal('VargLiteral')
 		elseif tk.Source == '{' then
 			return tableexpr()
 		elseif tk.Source == 'function' then
