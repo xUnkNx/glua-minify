@@ -483,9 +483,14 @@ local function CreateLuaParser(tokens)
 		end
 	end
 
+	-- Helper function that returns self.Token
+	local function _GetSelfToken(self)
+		return self.Token
+	end
+
 	local function MkNode(node)
-		local getf = node.GetFirstToken
-		local getl = node.GetLastToken
+		local getf = node.GetFirstToken or _GetSelfToken
+		local getl = node.GetLastToken or _GetSelfToken
 		function node:GetFirstToken()
 			local t = getf(self)
 			assert(t)
@@ -537,12 +542,6 @@ local function CreateLuaParser(tokens)
 			return MkNode{
 				Type = 'VariableExpr';
 				Token = get();
-				GetFirstToken = function(self)
-					return self.Token
-				end;
-				GetLastToken = function(self)
-					return self.Token
-				end;
 			}
 		else
 			print(debugMark())
@@ -740,12 +739,6 @@ local function CreateLuaParser(tokens)
 			return MkNode{
 				CallType = 'StringCall';
 				Token = get();
-				GetFirstToken = function(self)
-					return self.Token
-				end;
-				GetLastToken = function(self)
-					return self.Token
-				end;
 			}
 		else
 			error("Function arguments expected.")
@@ -837,12 +830,6 @@ local function CreateLuaParser(tokens)
 		return MkNode{
 			Type = _type;
 			Token = get();
-			GetFirstToken = function(self)
-				return self.Token
-			end;
-			GetLastToken = function(self)
-				return self.Token
-			end;
 		}
 	end
 
