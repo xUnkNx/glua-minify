@@ -161,4 +161,16 @@ function test_stringcall()
 	assertExprIsStringCall(stmt.Rhs[1]) -- right-hand side should be string call
 end
 
+-- Test some corner cases that aren't covered by running the "self test" sequence
+function test_corner_cases()
+	-- do .. end block / statement
+	-- (see e.g. https://stackoverflow.com/questions/23895406/why-use-a-do-end-block-in-lua)
+	local ast = LuaMinify.CreateLuaParser('do --[[ nothing ]] end')
+	local stmt = ast.StatementList[1]
+	lu.assertIsTable(stmt)
+	lu.assertEquals(stmt.Type, "DoStat")
+	_minify(ast)
+	lu.assertEquals(LuaMinify.AstToString(ast), 'do end')
+end
+
 lu.LuaUnit:run(...)
