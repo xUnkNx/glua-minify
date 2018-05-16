@@ -20,6 +20,11 @@ local function _unminify(ast)
 	unminify(ast, LuaMinify.AddVariableInfo(ast))
 end
 
+-- assert that the string representation of an AST matches a given value
+local function _assertAstStringEquals(ast, value)
+	lu.assertEquals(LuaMinify.AstToString(ast), value)
+end
+
 -- Validate a token table against a list of strings. This attempts to match
 -- each token's (.Source) content against the corresponding list element.
 -- Note: The terminating "Eof" token always gets checked implicitly.
@@ -41,24 +46,24 @@ function test_basics()
 	-- two keywords
 	local source = 'return true'
 	local ast = LuaMinify.CreateLuaParser(source)
-	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	_assertAstStringEquals(ast, source)
 	-- function call (identifier and string literal)
 	source = 'print("Hello world")'
 	ast = LuaMinify.CreateLuaParser(source)
-	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	_assertAstStringEquals(ast, source)
 
 	-- a basic minify() example
 	source = [[function foo(bar)
 		return bar
 	end]]
 	ast = LuaMinify.CreateLuaParser(source)
-	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	_assertAstStringEquals(ast, source)
 	_minify(ast)
-	lu.assertEquals(LuaMinify.AstToString(ast), "function a(b)return b end")
+	_assertAstStringEquals(ast, "function a(b)return b end")
 
 	-- now unminify() again
 	_unminify(ast)
-	lu.assertEquals(LuaMinify.AstToString(ast), [[
+	_assertAstStringEquals(ast, [[
 
 function G_1(L_1_arg1)
 	return L_1_arg1
@@ -97,27 +102,27 @@ function test_varargs()
 	-- pure vararg function, anonymous
 	local source = 'return function(...) end'
 	local ast = LuaMinify.CreateLuaParser(source)
-	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	_assertAstStringEquals(ast, source)
 	_minify(ast)
-	lu.assertEquals(LuaMinify.AstToString(ast), 'return function(...)end')
+	_assertAstStringEquals(ast, 'return function(...)end')
 	-- vararg function that has additional arguments, anonymous
 	source = 'return function(a, b, ...) end'
 	ast = LuaMinify.CreateLuaParser(source)
-	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	_assertAstStringEquals(ast, source)
 	_minify(ast)
-	lu.assertEquals(LuaMinify.AstToString(ast), 'return function(a,b,...)end')
+	_assertAstStringEquals(ast, 'return function(a,b,...)end')
 	-- pure vararg function, named
 	source = 'function foo(...) end'
 	ast = LuaMinify.CreateLuaParser(source)
-	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	_assertAstStringEquals(ast, source)
 	_minify(ast)
-	lu.assertEquals(LuaMinify.AstToString(ast), 'function a(...)end')
+	_assertAstStringEquals(ast, 'function a(...)end')
 	-- vararg function that has additional arguments, named
 	source = 'function bar(c, d, ...) end'
 	ast = LuaMinify.CreateLuaParser(source)
-	lu.assertEquals(LuaMinify.AstToString(ast), source)
+	_assertAstStringEquals(ast, source)
 	_minify(ast)
-	lu.assertEquals(LuaMinify.AstToString(ast), 'function a(b,c,...)end')
+	_assertAstStringEquals(ast, 'function a(b,c,...)end')
 end
 
 -- Test if tokenizer handles escape sequences
@@ -170,7 +175,7 @@ function test_corner_cases()
 	lu.assertIsTable(stmt)
 	lu.assertEquals(stmt.Type, "DoStat")
 	_minify(ast)
-	lu.assertEquals(LuaMinify.AstToString(ast), 'do end')
+	_assertAstStringEquals(ast, 'do end')
 end
 
 lu.LuaUnit:run(...)
