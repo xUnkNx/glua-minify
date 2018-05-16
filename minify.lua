@@ -483,12 +483,11 @@ local function CreateLuaParser(tokens)
 		end
 	end
 
-	-- Helper function that returns self.Token
-	local function _GetSelfToken(self)
-		return self.Token
-	end
-
 	local function MkNode(node)
+		local function _GetSelfToken(self)
+			return self.Token
+		end
+
 		local getf = node.GetFirstToken or _GetSelfToken
 		local getl = node.GetLastToken or _GetSelfToken
 		function node:GetFirstToken()
