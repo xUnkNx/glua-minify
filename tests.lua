@@ -72,7 +72,9 @@ end
 
 -- Test invalid syntax and some corner cases, mainly to improve code coverage
 function test_errors()
-	-- tokenizer
+
+	----- tokenizer -----
+
 	lu.assertErrorMsgContains('<1:1>: Bad symbol `$` in source.',
 		LuaMinify.CreateLuaTokenStream, '$')
 	lu.assertErrorMsgContains('<2:2>: Unfinished long string.',
@@ -80,7 +82,8 @@ function test_errors()
 	lu.assertErrorMsgContains('<1:4>: Invalid Escape Sequence `?`.',
 		LuaMinify.CreateLuaTokenStream, '"\\?"')
 
-	-- syntax parser
+	----- syntax parser -----
+
 	local tokens = LuaMinify.CreateLuaTokenStream('/')
 	assertTokenSequence(tokens, {'/'})
 	lu.assertErrorMsgContains('1:1: Unexpected symbol',
@@ -95,6 +98,34 @@ function test_errors()
 	assertTokenSequence(tokens, {'local', 'function', '2'})
 	lu.assertErrorMsgContains('1:16: Ident expected.',
 		LuaMinify.CreateLuaParser, tokens)
+
+	-- incomplete statement (block body missing terminator)
+	lu.assertErrorMsgContains('1:3: end expected.',
+		LuaMinify.CreateLuaParser, 'do')
+
+	-- method call with missing arguments
+	lu.assertErrorMsgContains('Function arguments expected.',
+		LuaMinify.CreateLuaParser, 'foo:bar')
+
+	-- invalid assignment
+	lu.assertErrorMsgContains('Bad left hand side of assignment',
+		LuaMinify.CreateLuaParser, 'foo, bar(3) = "no deal", true')
+
+	-- invalid numeric "for"
+	lu.assertErrorMsgContains('expected 2 or 3 values for range bounds',
+		LuaMinify.CreateLuaParser, 'for foo = 1 do end')
+	lu.assertErrorMsgContains('expected 2 or 3 values for range bounds',
+		LuaMinify.CreateLuaParser, 'for bar = 2, 3, 4, 5 do end')
+	-- bad "for" syntax
+	lu.assertErrorMsgContains('`=` or in expected',
+		LuaMinify.CreateLuaParser, 'for foo bar')
+
+	-- invalid "local" syntax
+	lu.assertErrorMsgContains('`function` or ident expected',
+		LuaMinify.CreateLuaParser, 'local 42')
+	-- local function declarations shouldn't have a "name chain"
+	lu.assertErrorMsgContains('1:19: `(` expected.',
+		LuaMinify.CreateLuaParser, 'local function foo.bar() end')
 end
 
 -- Test if parser can handle vararg functions
@@ -176,6 +207,25 @@ function test_corner_cases()
 	lu.assertEquals(stmt.Type, "DoStat")
 	_minify(ast)
 	_assertAstStringEquals(ast, 'do end')
+
+	-- number formats
+	local tokens = LuaMinify.CreateLuaTokenStream('0x7b') -- hex
+	lu.assertIsTable(tokens)
+	lu.assertIsTable(tokens[1])
+	lu.assertEquals(tokens[1].Type, 'Number')
+	tokens = LuaMinify.CreateLuaTokenStream('4e-3') -- negative exponent
+	lu.assertIsTable(tokens)
+	lu.assertIsTable(tokens[1])
+	lu.assertEquals(tokens[1].Type, 'Number')
+
+	-- something that starts like a 'long' comment, but is a normal one
+	local source = '--[=== looks fishy'
+	tokens = LuaMinify.CreateLuaTokenStream(source)
+	lu.assertIsTable(tokens)
+	lu.assertIsTable(tokens[1])
+	lu.assertEquals(tokens[1].LeadingWhite, source)
+	lu.assertEquals(tokens[1].Source, '') -- empty
+	lu.assertEquals(tokens[1].Type, 'Eof')
 end
 
 lu.LuaUnit:run(...)
