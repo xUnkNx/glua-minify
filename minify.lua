@@ -51,7 +51,7 @@ local function FormatTableInt(tb, atIndent, ignoreFunc)
 			out = out..(useNewlines and baseIndent or '')
 			if type(k) == 'number' then
 				do_nothing()
-			elseif type(k) == 'string' and k:match("^[A-Za-z_][A-Za-z0-9_]*$") then 
+			elseif type(k) == 'string' and k:match("^[A-Za-z_][A-Za-z0-9_]*$") then
 				out = out..k.." = "
 			elseif type(k) == 'string' then
 				out = out.."[\""..k.."\"] = "
@@ -80,8 +80,8 @@ local function FormatTableInt(tb, atIndent, ignoreFunc)
 end
 
 local function FormatTable(tb, ignoreFunc)
-	ignoreFunc = ignoreFunc or function() 
-		return false 
+	ignoreFunc = ignoreFunc or function()
+		return false
 	end
 	return FormatTableInt(tb, 0, ignoreFunc)
 end
@@ -92,24 +92,24 @@ local EscapeForCharacter = {['\r'] = '\\r', ['\n'] = '\\n', ['\t'] = '\\t', ['"'
 
 local CharacterForEscape = {['r'] = '\r', ['n'] = '\n', ['t'] = '\t', ['"'] = '"', ["'"] = "'", ['\\'] = '\\'}
 
-local AllIdentStartChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 
-                                     'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
+local AllIdentStartChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+                                     'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
                                      's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-                                     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 
-                                     'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 
+                                     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+                                     'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
                                      'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_'}
 
-local AllIdentChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 
-                                'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 
+local AllIdentChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+                                'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
                                 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-                                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 
-                                'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 
+                                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+                                'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R',
                                 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '_',
                                 '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
 local Digits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
-local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 
+local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
                             'A', 'a', 'B', 'b', 'C', 'c', 'D', 'd', 'E', 'e', 'F', 'f'}
 
 local Symbols = lookupify{'+', '-', '*', '/', '^', '%', ',', '{', '}', '[', ']', '(', ')', ';', '#', '.', ':'}
@@ -121,7 +121,7 @@ local Keywords = lookupify{
     'end', 'false', 'for', 'function', 'goto', 'if',
     'in', 'local', 'nil', 'not', 'or', 'repeat',
     'return', 'then', 'true', 'until', 'while',
-};
+}
 
 local BlockFollowKeyword = lookupify{'else', 'elseif', 'until', 'end'}
 
@@ -154,7 +154,7 @@ local BinaryPriority = {
    ['<='] = {3, 3};
    ['and'] = {2, 2};
    ['or'] = {1, 1};
-};
+}
 local UnaryPriority = 8
 
 -- Eof, Ident, Keyword, Number, String, Symbol
@@ -456,7 +456,7 @@ local function CreateLuaParser(tokens)
 	local function isBlockFollow()
 		local tok = peek()
 		return tok.Type == 'Eof' or (tok.Type == 'Keyword' and BlockFollowKeyword[tok.Source])
-	end	
+	end
 	local function isUnop()
 		return UnopSet[peek().Source] or false
 	end
@@ -504,8 +504,7 @@ local function CreateLuaParser(tokens)
 	end
 
 	-- Forward decls
-	local block;
-	local expr;
+	local block, expr
 
 	-- Expression list
 	local function exprlist()
@@ -648,8 +647,7 @@ local function CreateLuaParser(tokens)
 	local function funcdecl(isAnonymous)
 		local functionKw = get()
 		--
-		local nameChain;
-		local nameChainSeparator;
+		local nameChain, nameChainSeparator
 		--
 		if not isAnonymous then
 			nameChain = {}
@@ -835,7 +833,7 @@ local function CreateLuaParser(tokens)
 	local function simpleexpr()
 		local tk = peek()
 		if tk.Type == 'Number' then
-			return literal('NumberLiteral');
+			return literal('NumberLiteral')
 		elseif tk.Type == 'String' then
 			return literal('StringLiteral')
 		elseif tk.Source == 'nil' then
@@ -854,7 +852,7 @@ local function CreateLuaParser(tokens)
 	end
 
 	local function subexpr(limit)
-		local curNode;
+		local curNode
 
 		-- Initial Base Expression
 		if isUnop() then
@@ -871,7 +869,7 @@ local function CreateLuaParser(tokens)
 					return self.Rhs:GetLastToken()
 				end;
 			}
-		else 
+		else
 			curNode = simpleexpr()
 			assert(curNode, "nil simpleexpr")
 		end
@@ -964,7 +962,7 @@ local function CreateLuaParser(tokens)
 		local elseClauses = {}
 		while peek().Source == 'elseif' or peek().Source == 'else' do
 			local elseifKw = get()
-			local elseifCondition, elseifThenKw;
+			local elseifCondition, elseifThenKw
 			if elseifKw.Source == 'elseif' then
 				elseifCondition = expr()
 				elseifThenKw = expect('Keyword', 'then')
@@ -1150,7 +1148,7 @@ local function CreateLuaParser(tokens)
 			-- Local variable declaration
 			local varList, varCommaList = varlist()
 			local exprList, exprCommaList = {}, {}
-			local eqToken;
+			local eqToken
 			if peek().Source == '=' then
 				eqToken = get()
 				exprList, exprCommaList = exprlist()
@@ -1162,7 +1160,7 @@ local function CreateLuaParser(tokens)
 				Token_Local = localKw;
 				Token_Equals = eqToken;
 				Token_VarCommaList = varCommaList;
-				Token_ExprCommaList = exprCommaList;	
+				Token_ExprCommaList = exprCommaList;
 				GetFirstToken = function(self)
 					return self.Token_Local
 				end;
@@ -1182,8 +1180,7 @@ local function CreateLuaParser(tokens)
 	-- Return statement
 	local function retstat()
 		local returnKw = get()
-		local exprList;
-		local commaList;
+		local exprList, commaList
 		if isBlockFollow() or peek().Source == ';' then
 			exprList = {}
 			commaList = {}
@@ -1256,7 +1253,7 @@ local function CreateLuaParser(tokens)
 		local isLast = false
 		while not isLast and not isBlockFollow() do
 			-- Parse statement
-			local stat;
+			local stat
 			isLast, stat = statement()
 			table.insert(statements, stat)
 			local next = peek()
@@ -1293,7 +1290,7 @@ end
 
 local function VisitAst(ast, visitors)
 	local ExprType = lookupify{
-		'BinopExpr'; 'UnopExpr'; 
+		'BinopExpr'; 'UnopExpr';
 		'NumberLiteral'; 'StringLiteral'; 'NilLiteral'; 'BooleanLiteral'; 'VargLiteral';
 		'FieldExpr'; 'IndexExpr';
 		'MethodExpr'; 'CallExpr';
@@ -1343,7 +1340,7 @@ local function VisitAst(ast, visitors)
 		end
 	end
 
-	local visitExpr, visitStat;
+	local visitExpr, visitStat
 
 	visitExpr = function(expr)
 		if preVisit(expr) then
@@ -1355,9 +1352,9 @@ local function VisitAst(ast, visitors)
 			visitExpr(expr.Rhs)
 		elseif expr.Type == 'UnopExpr' then
 			visitExpr(expr.Rhs)
-		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or 
-			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or 
-			expr.Type == 'VargLiteral' 
+		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or
+			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or
+			expr.Type == 'VargLiteral'
 		then
 			do_nothing() -- No children to visit, single token literals
 		elseif expr.Type == 'FieldExpr' then
@@ -1462,7 +1459,7 @@ local function VisitAst(ast, visitors)
 			end
 		else
 			assert(false, "unreachable")
-		end	
+		end
 		postVisit(stat)
 	end
 
@@ -1685,7 +1682,7 @@ local function AddVariableInfo(ast)
 				end, {
 					Type = 'Local';
 				})
-			end		
+			end
 		end;
 	}
 	visitor.LocalFunctionStat = {
@@ -1716,14 +1713,14 @@ local function AddVariableInfo(ast)
 		end;
 	}
 	visitor.FunctionStat = {
-		Pre = function(stat) 			
+		Pre = function(stat)
 			-- Function stat adds a new scope containing the function arguments
 			-- as local variables.
 			-- A function stat may also assign to a global variable if it is in
 			-- the form `function foo()` with no additional dots/colons in the 
 			-- name chain.
 			local nameChain = stat.NameChain
-			local var;
+			local var
 			if #nameChain == 1 then
 				-- If there is only one item in the name chain, then the first item
 				-- is a reference to a global variable.
@@ -1819,7 +1816,7 @@ end
 -- Prints out an AST to stdout, or emits it by appending to a table
 local function PrintAst(ast, tbl_out)
 
-	local printStat, printExpr;
+	local printStat, printExpr
 
 	local function printt(tk)
 		if not tk.LeadingWhite or not tk.Source then
@@ -1842,9 +1839,9 @@ local function PrintAst(ast, tbl_out)
 		elseif expr.Type == 'UnopExpr' then
 			printt(expr.Token_Op)
 			printExpr(expr.Rhs)
-		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or 
-			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or 
-			expr.Type == 'VargLiteral' 
+		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or
+			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or
+			expr.Type == 'VargLiteral'
 		then
 			-- Just print the token
 			printt(expr.Token)
@@ -2042,7 +2039,7 @@ local function PrintAst(ast, tbl_out)
 			end
 			printt(stat.Token_Do)
 			printStat(stat.Body)
-			printt(stat.Token_End)		
+			printt(stat.Token_End)
 		elseif stat.Type == 'WhileStat' then
 			printt(stat.Token_While)
 			printExpr(stat.Condition)
@@ -2087,7 +2084,7 @@ local function PrintAst(ast, tbl_out)
 			end
 		else
 			assert(false, "unreachable")
-		end	
+		end
 	end
 
 	printStat(ast)
@@ -2102,7 +2099,7 @@ end
 
 -- Adds / removes whitespace in an AST to put it into a "standard formatting"
 local function FormatAst(ast)
-	local formatStat, formatExpr;
+	local formatStat, formatExpr
 
 	local currentIndent = 0
 
@@ -2161,9 +2158,9 @@ local function FormatAst(ast)
 		elseif expr.Type == 'UnopExpr' then
 			formatExpr(expr.Rhs)
 			--(expr.Token_Op)
-		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or 
-			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or 
-			expr.Type == 'VargLiteral' 
+		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or
+			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or
+			expr.Type == 'VargLiteral'
 		then
 			do_nothing()
 			--(expr.Token)
@@ -2405,7 +2402,7 @@ local function FormatAst(ast)
 				--]]
 			end
 			padToken(stat.Token_Do)
-			formatBody(stat.Token_Do, stat.Body, stat.Token_End)	
+			formatBody(stat.Token_Do, stat.Body, stat.Token_End)
 		elseif stat.Type == 'WhileStat' then
 			--(stat.Token_While)
 			formatExpr(stat.Condition)
@@ -2467,7 +2464,7 @@ local function FormatAst(ast)
 			end
 		else
 			assert(false, "unreachable")
-		end	
+		end
 	end
 
 	formatStat(ast)
@@ -2475,7 +2472,7 @@ end
 
 -- Strips as much whitespace off of tokens in an AST as possible without causing problems
 local function StripAst(ast)
-	local stripStat, stripExpr;
+	local stripStat, stripExpr
 
 	local function stript(token)
 		token.LeadingWhite = ''
@@ -2497,7 +2494,7 @@ local function StripAst(ast)
 		--  Abiguous syntax: `f(x)\n(x)()` is already disallowed, we can't cause a problem by removing newlines
 
 		-- Figure out what separation is needed
-		if 
+		if
 			(lastCh == '-' and firstCh == '-') or
 			(AllIdentChars[lastCh] and AllIdentChars[firstCh])
 		then
@@ -2537,9 +2534,9 @@ local function StripAst(ast)
 			stripExpr(expr.Rhs)
 			-- Handle the `- -b` -/-> `--b` case which would otherwise incorrectly generate a comment
 			joint(expr.Token_Op, expr.Rhs:GetFirstToken())
-		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or 
-			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or 
-			expr.Type == 'VargLiteral' 
+		elseif expr.Type == 'NumberLiteral' or expr.Type == 'StringLiteral' or
+			expr.Type == 'NilLiteral' or expr.Type == 'BooleanLiteral' or
+			expr.Type == 'VargLiteral'
 		then
 			-- Just print the token
 			stript(expr.Token)
@@ -2636,7 +2633,7 @@ local function StripAst(ast)
 					-- See if we can remove a semi-colon, the only case where we can't is if
 					-- this and the last statement have a `);(` pair, where removing the semi-colon
 					-- would introduce ambiguous syntax.
-					if stat.SemicolonList[i-1] and 
+					if stat.SemicolonList[i-1] and
 						(lastChStat:GetLastToken().Source ~= ')' or chStat:GetFirstToken().Source ~= ')')
 					then
 						stat.SemicolonList[i-1] = nil
@@ -2788,7 +2785,7 @@ local function StripAst(ast)
 				end
 			end
 			joint(stat.RangeList[#stat.RangeList]:GetLastToken(), stat.Token_Do)
-			bodyjoint(stat.Token_Do, stat.Body, stat.Token_End)	
+			bodyjoint(stat.Token_Do, stat.Body, stat.Token_End)
 		elseif stat.Type == 'WhileStat' then
 			stript(stat.Token_While)
 			stripExpr(stat.Condition)
@@ -2845,7 +2842,7 @@ local function StripAst(ast)
 			end
 		else
 			assert(false, "unreachable")
-		end	
+		end
 	end
 
 	stripStat(ast)

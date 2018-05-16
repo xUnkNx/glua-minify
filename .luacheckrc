@@ -3,7 +3,7 @@
 
 codes = true
 ignore = {
-	"61[24]",	-- ignore whitespace issues
+	"614",	-- trailing whitespace in comments
 }
 
 files = {
