@@ -241,6 +241,13 @@ function test_corner_cases()
 	tokens = LuaMinify.CreateLuaTokenStream(source)
 	assertTokenSequence(tokens, {}) -- will validate tokens[1] as 'Eof' token
 	lu.assertEquals(tokens[1].LeadingWhite, source)
+
+	-- make sure adjacent ");(" won't get joined on minify
+	source = '	print();   ("a"):len()'
+	ast = LuaMinify.CreateLuaParser(source)
+	_assertAstStringEquals(ast, source)
+	_minify(ast)
+	_assertAstStringEquals(ast, 'print();("a"):len()')
 end
 
 function test_CountTable()

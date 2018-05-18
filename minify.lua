@@ -2666,7 +2666,7 @@ local function StripAst(ast)
 					-- this and the last statement have a `);(` pair, where removing the semi-colon
 					-- would introduce ambiguous syntax.
 					if stat.SemicolonList[i-1] and
-						(lastChStat:GetLastToken().Source ~= ')' or chStat:GetFirstToken().Source ~= ')')
+						(lastChStat:GetLastToken().Source ~= ')' or chStat:GetFirstToken().Source ~= '(')
 					then
 						stat.SemicolonList[i-1] = nil
 					end
