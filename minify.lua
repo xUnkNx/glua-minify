@@ -61,7 +61,7 @@ local function FormatTable(tb, atIndent, ignoreFunc)
 		return false
 	end
 
-	local useNewlines = (CountTable(tb, 2) > 1)
+	local consecutiveIndex, useNewlines = 1, CountTable(tb, 2) > 1
 	local baseIndent = indentStr(atIndent + 1)
 	local out = {'{'} -- table of output strings
 	if useNewlines then
@@ -86,8 +86,10 @@ local function FormatTable(tb, atIndent, ignoreFunc)
 					table.insert(out, '"]')
 				end
 				table.insert(out, " = ")
-			elseif type_k == 'number' then
-				do_nothing()
+			elseif type_k == 'number' and k == consecutiveIndex then
+				-- as long as a "list"-type table has consecutive entries,
+				-- there's no need to output the key
+				consecutiveIndex = consecutiveIndex + 1
 			else
 				-- non-consecutive indices and non-string keys
 				table.insert(out, '[')

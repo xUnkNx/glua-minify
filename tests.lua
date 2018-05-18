@@ -252,10 +252,6 @@ function test_FormatTable()
 		if not success then
 			error('FAILED to execute chunk: ' .. t2)
 		end
-		if t[9] == 'foo' then -- known issue
-			print("FormatTable() is BROKEN for non-consecutive lists!\n" .. str)
-			return
-		end
 		lu.assertEquals(t2, t)
 	end
 
