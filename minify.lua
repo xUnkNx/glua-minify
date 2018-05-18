@@ -3184,6 +3184,7 @@ if debug.getinfo(2, "n").name == "require" then
 		CreateLuaParser = CreateLuaParser,
 		CreateLuaTokenStream = CreateLuaTokenStream,
 		FormatAst = FormatAst,
+		FormatTable = FormatTable,
 		GlobalRenameIgnore = GlobalRenameIgnore,
 		MinifyVariables = MinifyVariables,
 		PrintAst = PrintAst,

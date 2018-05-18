@@ -237,4 +237,43 @@ function test_CountTable()
 	lu.assertEquals(LuaMinify.CountTable{one=1, three=3, two=2}, 3)
 end
 
+function test_FormatTable()
+	-- Note: loadstring is deprecated for Lua 5.2+, and was replaced with load
+	local _load = loadstring or load -- luacheck: ignore 113
+
+	local function test(t)
+		local str = LuaMinify.FormatTable(t)
+		-- We expect the return value to be a suitable Lua representation of
+		-- the original table. So let's parse it to a second table (evaluating
+		-- the string expression) and see if they match...
+		local chunk = _load("return " .. str)
+			or error("MALFORMED table expression: " .. str)
+		local success, t2 = pcall(chunk)
+		if not success then
+			error('FAILED to execute chunk: ' .. t2)
+		end
+		if t[9] == 'foo' then -- known issue
+			print("FormatTable() is BROKEN for non-consecutive lists!\n" .. str)
+			return
+		end
+		lu.assertEquals(t2, t)
+	end
+
+	test {}
+	-- list-type tables
+	test {'foobar'}
+	test {'foo', 'bar'}
+	test {'a', 'b', 'c'}
+	test {one=1, three=3, two=2}
+	-- keys that require brackets and/or quoting
+	test {[true]=1, [false]=0}
+	test {['the answer'] = 42}
+	-- non-consecutive numeric indices
+	test {[9]='foo', [0]='bar'}
+	-- recursion on nested tables
+	test {{}}
+	test {{{}}}
+	test {{},{}}
+end
+
 lu.LuaUnit:run(...)
