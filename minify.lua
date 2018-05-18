@@ -26,10 +26,11 @@ SOFTWARE.
 local function do_nothing() end
 
 local function lookupify(tb)
+	local t = {}
 	for _, v in pairs(tb) do
-		tb[v] = true
+		t[v] = true
 	end
-	return tb
+	return t
 end
 
 local function CountTable(tb, limit)
