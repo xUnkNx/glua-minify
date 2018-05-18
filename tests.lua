@@ -287,4 +287,28 @@ function test_FormatTable()
 	test {{},{}}
 end
 
+function test_longcomment()
+	-- expect this to translate to a "statement list" (two tokens)
+	local tokens = LuaMinify.CreateLuaTokenStream[=[
+		--[==[ --[[ nested nasties ]==] ; -- ]]
+	]=]
+	assertTokenSequence(tokens, {{';', 'Symbol'}})
+
+	-- expect this to end up as a single "Eof" token (comment in `LeadingWhite`)
+	tokens = LuaMinify.CreateLuaTokenStream[=[
+		--[==[ --[[ nested nasties ]] ; -- ]==]
+	]=]
+	assertTokenSequence(tokens, {})
+
+	tokens = LuaMinify.CreateLuaTokenStream('foo = [==[ bar ]==]')
+	assertTokenSequence(tokens, {
+		{'foo', 'Ident'},
+		{'=', 'Symbol'},
+		{'[==[ bar ]==]', 'String'},
+	})
+
+	lu.assertErrorMsgContains('<1:20>: Unfinished long string.',
+		LuaMinify.CreateLuaTokenStream, 'foo = [==[ bar ]===]')
+end
+
 lu.LuaUnit:run(...)
