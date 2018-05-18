@@ -44,11 +44,14 @@ local function CountTable(tb, limit)
 	return c
 end
 
-local function FormatTableInt(tb, atIndent, ignoreFunc)
+local function FormatTable(tb, atIndent, ignoreFunc)
 	if tb.Print then
 		return tb.Print()
 	end
 	atIndent = atIndent or 0
+	ignoreFunc = ignoreFunc or function()
+		return false
+	end
 	local useNewlines = (CountTable(tb, 2) > 1)
 	local baseIndent = string.rep('    ', atIndent+1)
 	local out = "{"..(useNewlines and '\n' or '')
@@ -69,7 +72,7 @@ local function FormatTableInt(tb, atIndent, ignoreFunc)
 			elseif type(v) == 'number' then
 				out = out..v
 			elseif type(v) == 'table' then
-				out = out..FormatTableInt(v, atIndent+(useNewlines and 1 or 0), ignoreFunc)
+				out = out..FormatTable(v, atIndent+(useNewlines and 1 or 0), ignoreFunc)
 			else
 				out = out..tostring(v)
 			end
@@ -83,13 +86,6 @@ local function FormatTableInt(tb, atIndent, ignoreFunc)
 	end
 	out = out..(useNewlines and string.rep('    ', atIndent) or '').."}"
 	return out
-end
-
-local function FormatTable(tb, ignoreFunc)
-	ignoreFunc = ignoreFunc or function()
-		return false
-	end
-	return FormatTableInt(tb, 0, ignoreFunc)
 end
 
 local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
