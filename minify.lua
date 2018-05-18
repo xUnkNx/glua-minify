@@ -32,9 +32,15 @@ local function lookupify(tb)
 	return tb
 end
 
-local function CountTable(tb)
-	local c = 0
-	for _ in pairs(tb) do c = c + 1 end
+local function CountTable(tb, limit)
+	local c, k = 0, next(tb, nil)
+	while k ~= nil do
+		c = c + 1
+		if limit and (c >= limit) then
+			break
+		end
+		k = next(tb, k)
+	end
 	return c
 end
 
@@ -43,7 +49,7 @@ local function FormatTableInt(tb, atIndent, ignoreFunc)
 		return tb.Print()
 	end
 	atIndent = atIndent or 0
-	local useNewlines = (CountTable(tb) > 1)
+	local useNewlines = (CountTable(tb, 2) > 1)
 	local baseIndent = string.rep('    ', atIndent+1)
 	local out = "{"..(useNewlines and '\n' or '')
 	for k, v in pairs(tb) do
@@ -3174,6 +3180,7 @@ if debug.getinfo(2, "n").name == "require" then
 		AddVariableInfo = AddVariableInfo,
 		AstToString = AstToString,
 		BeautifyVariables = BeautifyVariables,
+		CountTable = CountTable,
 		CreateLuaParser = CreateLuaParser,
 		CreateLuaTokenStream = CreateLuaTokenStream,
 		FormatAst = FormatAst,

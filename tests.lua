@@ -228,4 +228,13 @@ function test_corner_cases()
 	lu.assertEquals(tokens[1].Type, 'Eof')
 end
 
+function test_CountTable()
+	lu.assertEquals(LuaMinify.CountTable{}, 0)
+	lu.assertEquals(LuaMinify.CountTable{'foobar'}, 1)
+	lu.assertEquals(LuaMinify.CountTable{'foo', 'bar'}, 2)
+	lu.assertEquals(LuaMinify.CountTable{'a', 'b', 'c'}, 3)
+	lu.assertEquals(LuaMinify.CountTable({'a', 'b', 'c'}, 2), 2) -- with limit
+	lu.assertEquals(LuaMinify.CountTable{one=1, three=3, two=2}, 3)
+end
+
 lu.LuaUnit:run(...)
