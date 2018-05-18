@@ -27,15 +27,28 @@ end
 
 -- Validate a token table against a list of strings. This attempts to match
 -- each token's (.Source) content against the corresponding list element.
--- Note: The terminating "Eof" token always gets checked implicitly.
+-- Alternatively a (table-type) list entry can specify a `Source` and `Type`
+-- pair. Note: The terminating "Eof" token always gets checked implicitly.
 local function assertTokenSequence(tokens, list)
 	lu.assertIsTable(list)
 	local len = #list
 	lu.assertIsTable(tokens)
 	lu.assertEquals(#tokens, len + 1, 'assertTokenSequence: token count mismatch')
+
 	for i = 1, len do
-		lu.assertEquals(tokens[i].Source, list[i], 'token #'..i..' mismatches')
+		local entry = list[i]
+		if type(entry) == 'string' then
+			lu.assertEquals(tokens[i].Source, entry,
+				'token #'..i..' `Source` mismatch')
+		else
+			-- assume table-type entry, specifying both Source and Type
+			lu.assertEquals(tokens[i].Source, entry[1],
+				'token #'..i..' `Source` mismatch')
+			lu.assertEquals(tokens[i].Type, entry[2],
+				'token #'..i..' `Type` mismatch')
+		end
 	end
+
 	-- check "Eof"
 	lu.assertEquals(tokens[len + 1].Type, 'Eof', 'last token isn\'t "Eof"')
 	lu.assertEquals(tokens[len + 1].Source, '', 'last token isn\'t empty')
@@ -87,17 +100,24 @@ function test_errors()
 	----- syntax parser -----
 
 	local tokens = LuaMinify.CreateLuaTokenStream('/')
-	assertTokenSequence(tokens, {'/'})
+	assertTokenSequence(tokens, {{'/', 'Symbol'}})
 	lu.assertErrorMsgContains('1:1: Unexpected symbol',
 		LuaMinify.CreateLuaParser, tokens)
 
 	tokens = LuaMinify.CreateLuaTokenStream('foobar 4')
-	assertTokenSequence(tokens, {'foobar', '4'})
+	assertTokenSequence(tokens, {
+		{'foobar', 'Ident'},
+		{'4', 'Number'},
+	})
 	lu.assertErrorMsgContains('1:8: `=` expected.',
 		LuaMinify.CreateLuaParser, tokens)
 
 	tokens = LuaMinify.CreateLuaTokenStream('local function 2')
-	assertTokenSequence(tokens, {'local', 'function', '2'})
+	assertTokenSequence(tokens, {
+		{'local', 'Keyword'},
+		{'function', 'Keyword'},
+		{'2', 'Number'}
+	})
 	lu.assertErrorMsgContains('1:16: Ident expected.',
 		LuaMinify.CreateLuaParser, tokens)
 
@@ -212,22 +232,15 @@ function test_corner_cases()
 
 	-- number formats
 	local tokens = LuaMinify.CreateLuaTokenStream('0x7b') -- hex
-	lu.assertIsTable(tokens)
-	lu.assertIsTable(tokens[1])
-	lu.assertEquals(tokens[1].Type, 'Number')
+	assertTokenSequence(tokens, {{'0x7b', 'Number'}})
 	tokens = LuaMinify.CreateLuaTokenStream('4e-3') -- negative exponent
-	lu.assertIsTable(tokens)
-	lu.assertIsTable(tokens[1])
-	lu.assertEquals(tokens[1].Type, 'Number')
+	assertTokenSequence(tokens, {{'4e-3', 'Number'}})
 
 	-- something that starts like a 'long' comment, but is a normal one
 	local source = '--[=== looks fishy'
 	tokens = LuaMinify.CreateLuaTokenStream(source)
-	lu.assertIsTable(tokens)
-	lu.assertIsTable(tokens[1])
+	assertTokenSequence(tokens, {}) -- will validate tokens[1] as 'Eof' token
 	lu.assertEquals(tokens[1].LeadingWhite, source)
-	lu.assertEquals(tokens[1].Source, '') -- empty
-	lu.assertEquals(tokens[1].Type, 'Eof')
 end
 
 function test_CountTable()
