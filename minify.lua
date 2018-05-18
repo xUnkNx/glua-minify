@@ -691,7 +691,7 @@ local function CreateLuaParser(tokens)
 		}
 	end
 
-	-- Argument list passed to a funciton
+	-- Argument list passed to a function
 	local function functionargs()
 		local tk = peek()
 		if tk.Source == '(' then
@@ -1532,7 +1532,7 @@ local function AddVariableInfo(ast)
 
 	-- Add / reference variables
 	local function addLocalVar(name, setNameFunc, localInfo)
-		assert(localInfo, "Misisng localInfo")
+		assert(localInfo, "Missing localInfo")
 		assert(name, "Missing local var name")
 		local var = {
 			Type = 'Local';
@@ -1653,7 +1653,7 @@ local function AddVariableInfo(ast)
 		end;
 	}
 	visitor.VariableExpr = function(expr)
-		-- Variable expression references from existing local varibales
+		-- Variable expression references from existing local variables
 		-- in the current scope, annotating the variable usage with variable
 		-- information.
 		expr.Variable = referenceVariable(expr.Token.Source, function(newName)
@@ -2490,8 +2490,8 @@ local function StripAst(ast)
 		-- Cases to consider:
 		--  Touching minus signs -> comment: `- -42` -> `--42' is invalid
 		--  Touching words: `a b` -> `ab` is invalid
-		--  Touching digits: `2 3`, can't occurr in the Lua syntax as number literals aren't a primary expression
-		--  Abiguous syntax: `f(x)\n(x)()` is already disallowed, we can't cause a problem by removing newlines
+		--  Touching digits: `2 3`, can't occur in the Lua syntax as number literals aren't a primary expression
+		--  Ambiguous syntax: `f(x)\n(x)()` is already disallowed, we can't cause a problem by removing newlines
 
 		-- Figure out what separation is needed
 		if
@@ -2875,7 +2875,7 @@ local function MinifyVariables(globalScope, rootScope)
 	-- things so we keep track of them in this set.
 	local externalGlobals = {}
 
-	-- First we want to rename all of the variables to unique temoraries, so that we can
+	-- First we want to rename all of the variables to unique temporaries, so that we can
 	-- easily use the scope::GetVar function to check whether renames are valid.
 	local temporaryIndex = 0
 	for _, var in pairs(globalScope) do
@@ -2947,7 +2947,7 @@ local function MinifyVariables_2(globalScope, rootScope)
 				table.insert(allVariables, var)
 			else
 				-- We can't rename this global, mark it as an unusable name
-				-- and don't add it to the nename list
+				-- and don't add it to the rename list
 				globalUsedNames[var.Name] = true
 			end
 		end
@@ -2992,7 +2992,7 @@ local function MinifyVariables_2(globalScope, rootScope)
 
 	-- For each variable, go to rename it
 	for _, var in pairs(allVariables) do
-		-- Lazy... todo: Make theis pair a proper for-each-pair-like set of loops 
+		-- Lazy... todo: Make this pair a proper for-each-pair-like set of loops
 		-- rather than using a renamed flag.
 		var.Renamed = true
 
@@ -3017,7 +3017,7 @@ local function MinifyVariables_2(globalScope, rootScope)
 						--  or
 						-- Check case 3
 						-- The other var is at a shallower depth, is there a reference to it
-						-- durring this variable's lifetime?
+						-- during this variable's lifetime?
 						for _, refAt in pairs(otherVar.ReferenceLocationList) do
 							if refAt >= var.BeginLocation and refAt <= var.ScopeEndLocation then
 								-- Collide
@@ -3093,7 +3093,7 @@ local function MinifyVariables_2(globalScope, rootScope)
 	-- 	io.write("\n\n")
 	-- end
 
-	-- -- First we want to rename all of the variables to unique temoraries, so that we can
+	-- -- First we want to rename all of the variables to unique temporaries, so that we can
 	-- -- easily use the scope::GetVar function to check whether renames are valid.
 	-- local temporaryIndex = 0
 	-- for _, var in pairs(allVariables) do
