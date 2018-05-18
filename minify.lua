@@ -287,9 +287,9 @@ local function CreateLuaTokenStream(text)
 		end
 	end
 
+	local whiteStart, tokenStart -- used in main loop, upvalues for token()
+
 	-- Add token
-	local whiteStart = 1
-	local tokenStart = 1
 	local function token(type)
 		local tk = {
 			Type = type;
@@ -297,8 +297,6 @@ local function CreateLuaTokenStream(text)
 			Source = text:sub(tokenStart, p-1);
 		}
 		table.insert(tokenBuffer, tk)
-		whiteStart = p
-		tokenStart = p
 		return tk
 	end
 
@@ -324,21 +322,17 @@ local function CreateLuaTokenStream(text)
 							longdata(eqcount)
 						else
 							-- Normal comment body
-							while true do
-								local c2 = get()
-								if c2 == '' or c2 == '\n' then
-									break
-								end
-							end
+							local c2
+							repeat
+								c2 = get()
+							until c2 == '' or c2 == '\n'
 						end
 					else
 						-- Normal comment body
-						while true do
-							local c2 = get()
-							if c2 == '' or c2 == '\n' then
-								break
-							end
-						end
+						local c2
+						repeat
+							c2 = get()
+						until c2 == '' or c2 == '\n'
 					end
 				else
 					break
@@ -361,17 +355,16 @@ local function CreateLuaTokenStream(text)
 			break
 		elseif c1 == '\'' or c1 == '\"' then
 			-- String constant
-			while true do
-				local c2 = get()
+			local c2
+			repeat
+				c2 = get()
 				if c2 == '\\' then
 					local c3 = get()
 					if not(Digits[c3] or CharacterForEscape[c3]) then
 						_error("Invalid Escape Sequence `"..c3.."`.")
 					end
-				elseif c2 == c1 then
-					break
 				end
-			end
+			until c2 == c1
 			token('String')
 		elseif AllIdentStartChars[c1] then
 			-- Ident or Keyword
