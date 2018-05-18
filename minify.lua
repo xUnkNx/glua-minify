@@ -44,48 +44,82 @@ local function CountTable(tb, limit)
 	return c
 end
 
+local indentation = '    ' -- normally either multiple spaces or "\t"
+local function indentStr(level)
+	return string.rep(indentation, level or 0)
+end
+
 local function FormatTable(tb, atIndent, ignoreFunc)
-	if tb.Print then
+	-- Note: This is currently unused,
+	-- and it might be better to check for a __tostring metamethod instead
+	if type(tb.Print) == 'function' then
 		return tb.Print()
 	end
+	-- set parameter defaults
 	atIndent = atIndent or 0
 	ignoreFunc = ignoreFunc or function()
 		return false
 	end
+
 	local useNewlines = (CountTable(tb, 2) > 1)
-	local baseIndent = string.rep('    ', atIndent+1)
-	local out = "{"..(useNewlines and '\n' or '')
+	local baseIndent = indentStr(atIndent + 1)
+	local out = {'{'} -- table of output strings
+	if useNewlines then
+		table.insert(out, '\n')
+	end
+
 	for k, v in pairs(tb) do
-		if type(v) ~= 'function' and not ignoreFunc(k) then
-			out = out..(useNewlines and baseIndent or '')
-			if type(k) == 'number' then
-				do_nothing()
-			elseif type(k) == 'string' and k:match("^[A-Za-z_][A-Za-z0-9_]*$") then
-				out = out..k.." = "
-			elseif type(k) == 'string' then
-				out = out.."[\""..k.."\"] = "
-			else
-				out = out.."["..tostring(k).."] = "
+		local type_k, type_v = type(k), type(v) -- cache types, used multiple times
+		if type_v ~= 'function' and not ignoreFunc(k) then
+			if useNewlines then
+				table.insert(out, baseIndent)
 			end
-			if type(v) == 'string' then
-				out = out.."\""..v.."\""
-			elseif type(v) == 'number' then
-				out = out..v
-			elseif type(v) == 'table' then
-				out = out..FormatTable(v, atIndent+(useNewlines and 1 or 0), ignoreFunc)
+
+			-- key
+			if type_k == 'string' then
+				if k:match("^[A-Za-z_][A-Za-z0-9_]*$") then
+					table.insert(out, k) -- plain identifier key, no need to quote
+				else
+					-- bracket and quote key
+					table.insert(out, '["')
+					table.insert(out, k)
+					table.insert(out, '"]')
+				end
+				table.insert(out, " = ")
+			elseif type_k == 'number' then
+				do_nothing()
 			else
-				out = out..tostring(v)
+				-- non-consecutive indices and non-string keys
+				table.insert(out, '[')
+				table.insert(out, tostring(k))
+				table.insert(out, '] = ')
+			end
+
+			-- value
+			if type_v == 'string' then
+				table.insert(out, '"')
+				table.insert(out, v)
+				table.insert(out, '"')
+			elseif type_v == 'table' then
+				-- recursive output of table-type values
+				table.insert(out,
+					FormatTable(v, atIndent + (useNewlines and 1 or 0), ignoreFunc))
+			else
+				table.insert(out, tostring(v))
 			end
 			if next(tb, k) then
-				out = out..","
+				table.insert(out, ',')
 			end
 			if useNewlines then
-				out = out..'\n'
+				table.insert(out, '\n')
 			end
 		end
 	end
-	out = out..(useNewlines and string.rep('    ', atIndent) or '').."}"
-	return out
+	if useNewlines then
+		table.insert(out, indentStr(atIndent))
+	end
+	table.insert(out, '}')
+	return table.concat(out)
 end
 
 local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
