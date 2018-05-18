@@ -358,7 +358,9 @@ local function CreateLuaTokenStream(text)
 			local c2
 			repeat
 				c2 = get()
-				if c2 == '\\' then
+				if c2 == '' then
+					_error("Unfinished string.")
+				elseif c2 == '\\' then
 					local c3 = get()
 					if not(Digits[c3] or CharacterForEscape[c3]) then
 						_error("Invalid Escape Sequence `"..c3.."`.")

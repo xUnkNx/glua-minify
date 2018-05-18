@@ -81,6 +81,8 @@ function test_errors()
 		LuaMinify.CreateLuaTokenStream, '\n[[')
 	lu.assertErrorMsgContains('<1:4>: Invalid Escape Sequence `?`.',
 		LuaMinify.CreateLuaTokenStream, '"\\?"')
+	lu.assertErrorMsgContains('<1:10>: Unfinished string.',
+		LuaMinify.CreateLuaTokenStream, 'foobar = "')
 
 	----- syntax parser -----
 
