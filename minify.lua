@@ -274,17 +274,15 @@ local function CreateLuaTokenStream(text)
 	-- Precondition: The first `[` has been consumed
 	-- Return: nil or the equals count
 	local function getopen()
-		local startp = p
-		while look() == '=' do
-			p = p + 1
+		local eqcount = 0
+		while look(eqcount) == '=' do
+			eqcount = eqcount + 1
 		end
-		if look() == '[' then
-			p = p + 1
-			return p - startp - 1
-		else
-			p = startp
-			return nil
+		if look(eqcount) == '[' then
+			p = p + eqcount + 1
+			return eqcount
 		end
+		return nil
 	end
 
 	local whiteStart, tokenStart -- used in main loop, upvalues for token()
