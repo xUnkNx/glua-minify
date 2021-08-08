@@ -153,28 +153,25 @@ local HexDigits = lookupify{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 
 local Symbols = lookupify{'+', '-', '*', '/', '^', '%', ',', '{', '}', '[', ']', '(', ')', ';', '#', '.', ':'}
 
-local EqualSymbols = lookupify{'~', '=', '>', '<'}
+local EqualSymbols = lookupify{'~', '!', '=', '>', '<'}
 
 local Keywords = lookupify{
     'and', 'break', 'do', 'else', 'elseif',
     'end', 'false', 'for', 'function', 'goto', 'if',
     'in', 'local', 'nil', 'not', 'or', 'repeat',
     'return', 'then', 'true', 'until', 'while',
+    'continue', '&&', '||'
 }
 
 local BlockFollowKeyword = lookupify{'else', 'elseif', 'until', 'end'}
 
-local UnopSet = lookupify{'-', 'not', '#'}
+local UnopSet = lookupify{'-', 'not', '#', '!'}
 
 local BinopSet = lookupify{
 	'+', '-', '*', '/', '%', '^', '#',
 	'..', '.', ':',
-	'>', '<', '<=', '>=', '~=', '==',
-	'and', 'or'
-}
-
-local GlobalRenameIgnore = lookupify{
-
+	'>', '<', '<=', '>=', '~=', '==', '!=',
+	'and', 'or', '&&', '||'
 }
 
 local BinaryPriority = {
@@ -187,12 +184,15 @@ local BinaryPriority = {
    ['..'] = {5, 4};
    ['=='] = {3, 3};
    ['~='] = {3, 3};
+   ['!='] = {3, 3};
    ['>'] = {3, 3};
    ['<'] = {3, 3};
    ['>='] = {3, 3};
    ['<='] = {3, 3};
    ['and'] = {2, 2};
+   ['&&'] = {2, 2};
    ['or'] = {1, 1};
+   ['||'] = {1, 1};
 }
 local UnaryPriority = 8
 
@@ -335,6 +335,27 @@ local function CreateLuaTokenStream(text)
 				else
 					break
 				end
+			elseif c == '/' then
+				local c2 = look(1)
+				if c2 == '*' then
+					p = p + 2
+					-- Long comment body without levels
+					repeat
+						c2 = get()
+						if c2 == '*' and look() =='/' then
+							get()
+							break
+						end
+					until c2 == ''
+				elseif c2 == '/' then
+					p = p + 2
+					-- Normal comment body
+					repeat
+						c2 = get()
+					until c2 == '' or c2 == '\n'
+				else
+					break
+				end
 			elseif WhiteChars[c] then
 				p = p + 1
 			else
@@ -433,6 +454,9 @@ local function CreateLuaTokenStream(text)
 				p = p + 1
 			end
 			token('Symbol')
+		elseif (c1 == '&' and look() == '&') or (c1 == '|' and look() == '|') then
+			get()
+			token('Keyword')
 		elseif Symbols[c1] then
 			token('Symbol')
 		else
@@ -1252,6 +1276,21 @@ local function CreateLuaParser(tokens)
 		}
 	end
 
+	-- Continue statement
+	local function continuestat()
+		local continueKw = get()
+		return {
+			Type = 'ContinueStat';
+			Token_Continue = continueKw;
+			GetFirstToken = function(self)
+				return self.Token_Continue
+			end;
+			GetLastToken = function(self)
+				return self.Token_Continue
+			end;
+		}
+	end
+
 	-- Expression
 	local function statement()
 		local tok = peek()
@@ -1273,6 +1312,8 @@ local function CreateLuaParser(tokens)
 			return true, retstat()
 		elseif tok.Source == 'break' then
 			return true, breakstat()
+		elseif tok.Source == 'continue' then
+			return true, continuestat()
 		else
 			return false, exprstat()
 		end
@@ -1334,6 +1375,7 @@ local function VisitAst(ast, visitors)
 
 	local StatType = lookupify{
 		'StatList';
+		'ContinueStat';
 		'BreakStat';
 		'ReturnStat';
 		'LocalVarStat';
@@ -1437,7 +1479,7 @@ local function VisitAst(ast, visitors)
 			for _, ch in pairs(stat.StatementList) do
 				visitStat(ch)
 			end
-		elseif stat.Type == 'BreakStat' then
+		elseif stat.Type == 'BreakStat' or stat.Type == 'ContinueStat' then
 			do_nothing() -- No children to visit
 		elseif stat.Type == 'ReturnStat' then
 			for _, expr in pairs(stat.ExprList) do
@@ -1965,6 +2007,8 @@ local function PrintAst(ast, tbl_out)
 			end
 		elseif stat.Type == 'BreakStat' then
 			printt(stat.Token_Break)
+		elseif stat.Type == 'ContinueStat' then
+			printt(stat.Token_Continue)
 		elseif stat.Type == 'ReturnStat' then
 			printt(stat.Token_Return)
 			for index, expr in pairs(stat.ExprList) do
@@ -2301,7 +2345,7 @@ local function FormatAst(ast)
 				applyIndent(_stat:GetFirstToken())
 			end
 
-		elseif stat.Type == 'BreakStat' then
+		elseif stat.Type == 'BreakStat' or stat.Type == 'ContinueStat' then
 			do_nothing() --(stat.Token_Break)
 
 		elseif stat.Type == 'ReturnStat' then
@@ -2690,6 +2734,9 @@ local function StripAst(ast)
 		elseif stat.Type == 'BreakStat' then
 			stript(stat.Token_Break)
 
+		elseif stat.Type == 'ContinueStat' then
+			stript(stat.Token_Continue)
+			
 		elseif stat.Type == 'ReturnStat' then
 			stript(stat.Token_Return)
 			for index, expr in pairs(stat.ExprList) do
@@ -2912,8 +2959,9 @@ local function MinifyVariables(globalScope, rootScope)
 	local temporaryIndex = 0
 	for _, var in pairs(globalScope) do
 		if var.AssignedTo then
-			var:Rename('_TMP_'..temporaryIndex..'_')
-			temporaryIndex = temporaryIndex + 1
+			--var:Rename('_TMP_'..temporaryIndex..'_')
+			--temporaryIndex = temporaryIndex + 1
+			-- do not rename globals
 		else
 			-- Not assigned to, external global
 			externalGlobals[var.Name] = true
@@ -2927,12 +2975,14 @@ local function MinifyVariables(globalScope, rootScope)
 	local nextFreeNameIndex = 0
 	for _, var in pairs(globalScope) do
 		if var.AssignedTo then
+			--[[
 			local varName
 			repeat
 				varName = indexToVarName(nextFreeNameIndex)
 				nextFreeNameIndex = nextFreeNameIndex + 1
 			until not Keywords[varName] and not externalGlobals[varName]
 			var:Rename(varName)
+			]] -- do not rename globals
 		end
 	end
 
@@ -2976,7 +3026,7 @@ local function MinifyVariables_2(globalScope, rootScope)
 				-- We can try to rename this global since it was assigned to
 				-- (and thus presumably initialized) in the script we are 
 				-- minifying.
-				table.insert(allVariables, var)
+				--table.insert(allVariables, var)
 			else
 				-- We can't rename this global, mark it as an unusable name
 				-- and don't add it to the rename list
@@ -3251,3 +3301,15 @@ elseif args[1] == 'unminify' then
 else
 	usageError()
 end
+
+--[[
+module("minifier",package.seeall)
+function minifyfile(filen)
+	local data = file.Read(filen,'GAME')
+	if data then
+		local ast = CreateLuaParser(data)
+		local global_scope, root_scope = AddVariableInfo(ast)
+		minify(ast, global_scope, root_scope)
+	end
+end
+]]

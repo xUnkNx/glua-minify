@@ -1,11 +1,11 @@
-This is NiteHawk's fork of https://github.com/stravant/lua-minify.  
-[![Build Status](https://travis-ci.org/n1tehawk/lua-minify.svg?branch=nitehawk)](https://travis-ci.org/n1tehawk/lua-minify)
-[![Coverage Status](https://coveralls.io/repos/n1tehawk/lua-minify/badge.svg?branch=nitehawk)](https://coveralls.io/r/n1tehawk/lua-minify?branch=nitehawk)
-[![License](http://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+This is UnkN's fork of https://github.com/n1tehawk/lua-minify and https://github.com/stravant/lua-minify.  
+
+Just added support for Garry's Mod lua syntax: continue (go to next 'for' condition), && (and), || (or), != (not equal), /* */ (CPP comment)
+Also disabled renaming globals, because its useless for gmod i think.
 
 ---
 
-## A Lua tool for minifying and reverse engineering minified Lua code
+## A Lua tool for minifying and reverse engineering minified GMod Lua code
 
 Usage:
 
