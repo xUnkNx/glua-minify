@@ -125,11 +125,11 @@ local function FormatTable(tb, atIndent, ignoreFunc)
 	return table.concat(out)
 end
 
-local WhiteChars = lookupify{' ', '\n', '\t', '\r'}
+local WhiteChars = lookupify{' ', '\n', '\t', '\r', '\b', '\f', '\v'}
 
-local EscapeForCharacter = {['\r'] = '\\r', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'", ['\\'] = '\\'}
+local EscapeForCharacter = {['\r'] = '\\r', ['\b'] = '\\b', ['\f'] = '\\f', ['\v'] = '\\v', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'", ['\\'] = '\\'}
 
-local CharacterForEscape = {['r'] = '\r', ['n'] = '\n', ['t'] = '\t', ['"'] = '"', ["'"] = "'", ['\\'] = '\\'}
+local CharacterForEscape = {['r'] = '\r', ['b'] = '\b', ['f'] = '\f', ['v'] = '\v', ['n'] = '\n', ['t'] = '\t', ['"'] = '"', ["'"] = "'", ['\\'] = '\\'}
 
 local AllIdentStartChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
                                      'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
