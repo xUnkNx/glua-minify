@@ -125,11 +125,12 @@ local function FormatTable(tb, atIndent, ignoreFunc)
 	return table.concat(out)
 end
 
-local WhiteChars = lookupify{' ', '\n', '\t', '\r', '\b', '\f', '\v'}
+local WhiteChars = lookupify{' ', '\n', '\t', '\r', '\a', '\b', string.char(11), string.char(12)}
+-- '\f', '\v', '\z' are not whitechars in original lua 5.1, they're equals to ♀, ♂, z | glua translate them to char(11), char(12) and zero len string like latest lua
 
-local EscapeForCharacter = {['\r'] = '\\r', ['\b'] = '\\b', ['\f'] = '\\f', ['\v'] = '\\v', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'", ['\\'] = '\\'}
+local EscapeForCharacter = {['\r'] = '\\r', ['\a'] = '\\a', ['\b'] = '\\b', ['\f'] = '\\f', ['\v'] = '\\v', ['\n'] = '\\n', ['\t'] = '\\t', ['"'] = '\\"', ["'"] = "\\'", ['\\'] = '\\'}
 
-local CharacterForEscape = {['r'] = '\r', ['b'] = '\b', ['f'] = '\f', ['v'] = '\v', ['n'] = '\n', ['t'] = '\t', ['"'] = '"', ["'"] = "'", ['\\'] = '\\'}
+local CharacterForEscape = {['r'] = '\r', ['a'] = '\a', ['b'] = '\b', ['f'] = '\f', ['v'] = '\v', ['n'] = '\n', ['t'] = '\t', ['z'] = '\z', ['"'] = '"', ["'"] = "'", ['\\'] = '\\'}
 
 local AllIdentStartChars = lookupify{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
                                      'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
@@ -157,7 +158,7 @@ local EqualSymbols = lookupify{'~', '!', '=', '>', '<'}
 
 local Keywords = lookupify{
     'and', 'break', 'do', 'else', 'elseif',
-    'end', 'false', 'for', 'function', 'goto', 'if',
+    'end', 'false', 'for', 'function', 'if',
     'in', 'local', 'nil', 'not', 'or', 'repeat',
     'return', 'then', 'true', 'until', 'while',
     'continue', '&&', '||'
@@ -168,8 +169,7 @@ local BlockFollowKeyword = lookupify{'else', 'elseif', 'until', 'end'}
 local UnopSet = lookupify{'-', 'not', '#', '!'}
 
 local BinopSet = lookupify{
-	'+', '-', '*', '/', '%', '^', '#',
-	'..', '.', ':',
+	'+', '-', '*', '/', '%', '^', '..',
 	'>', '<', '<=', '>=', '~=', '==', '!=',
 	'and', 'or', '&&', '||'
 }
@@ -218,8 +218,31 @@ local function _decode_position(text, pos, line, col)
 	end
 	return line, col
 end
-
+local BOM = lookupify{
+	string.char(0xEF, 0xBB, 0xBF), -- UTF-8
+	string.char(0xFE, 0xFF), -- UTF-16 (BE)
+	string.char(0xFF, 0xFE), -- UTF-16 (LE)
+	string.char(0x00, 0x00, 0xFE, 0xFF), -- UTF-32 (BE)
+	string.char(0xFF, 0xFE, 0x00, 0x00), -- UTF-32 (LE)
+	string.char(0x2B, 0x2F, 0x76), -- UTF-7
+	string.char(0xF7, 0x64, 0x4C), -- UTF-1
+	string.char(0xDD, 0x73, 0x66, 0x73), -- UTF-EBCDIC
+	string.char(0x0E, 0xFE, 0xFF), -- SCSU
+	string.char(0xFB, 0xEE, 0x28), -- BOCU-1
+	string.char(0x84, 0x31, 0x95, 0x33) -- GB-18030
+}
 local function CreateLuaTokenStream(text)
+	-- UTF with BOM fix
+	local byte2, byte3, byte4 = text:sub(0,2), text:sub(0,3), text:sub(0,4)
+	if BOM[byte2] then
+		text = text:sub(3)
+	elseif BOM[byte3] then
+		text = text:sub(4)
+	elseif BOM[byte4] then
+		text = text:sub(5)
+	end
+	--text = text:gsub('\r', '\r\n') -- Macintosh (CR) fix
+
 	-- Tracking for the current position in the buffer, and
 	-- the current line / character we are on.
 	local p = 1
@@ -381,12 +404,43 @@ local function CreateLuaTokenStream(text)
 					_error("Unfinished string.")
 				elseif c2 == '\\' then
 					local c3 = get()
-					if not(Digits[c3] or CharacterForEscape[c3]) then
-						_error("Invalid Escape Sequence `"..c3.."`.")
+					if c3 == 'x' then -- hexademical char
+						local d1, d2 = look(), look()
+						if not HexDigits[d1] or not HexDigits[d2] then
+							error('Hexadecimal digit(-s) expected near `"..c3.."`.')
+						end
+					elseif not Digits[c3] and not CharacterForEscape[c3] then
+						error("Invalid Escape Sequence `"..c3.."`.")
 					end
 				end
 			until c2 == c1
 			token('String')
+		elseif c1 == ':' and look() == ':' then
+			local c2 = get()
+			-- label ::= ‘::’ Name ‘::’
+			c2 = get() -- first char for lexical name
+			if not AllIdentStartChars[c2] then
+				error('Bad identifier for goto label.')
+			end
+			repeat
+				c2 = get()
+				if c2 == '' then
+					_error('Unfinished identifier')
+				elseif c2 == ':' then
+					break
+				end
+				if not AllIdentChars[c2] then
+					error('Bad identifier for goto label.')
+				end
+			until c2 == c1 -- when we reach next :
+			local c3 = get() -- next char should be :
+			if c3 ~= ':' then
+				error('Invalid goto label.')
+			end
+			if Keywords[text:sub(tokenStart + 2, p - 3)] then
+				error('Goto label cannot be keyword')
+			end
+			token('GotoLabel')
 		elseif AllIdentStartChars[c1] then
 			-- Ident or Keyword
 			while AllIdentChars[look()] do
@@ -460,7 +514,7 @@ local function CreateLuaTokenStream(text)
 		elseif Symbols[c1] then
 			token('Symbol')
 		else
-			_error("Bad symbol `"..c1.."` in source.")
+			_error("Bad symbol `"..c1.."` in source. Debug: " .. string.sub(text, math.max(p - 50, 0), p + 50))
 		end
 	end
 	return tokenBuffer
@@ -530,11 +584,11 @@ local function CreateLuaParser(tokens)
 				print("Tokens["..i.."] = `"..peek(i).Source.."`")
 			end
 			if source then
-				error(getTokenStartPosition(tk)..": `"..source.."` expected.")
+				error(getTokenStartPosition(tk)..": `"..source.."` expected, got "..tk.Type..".")
 			else
 				error(getTokenStartPosition(tk)..": "..type
 					  ..(type2 and (" or "..type2) or "")
-					  .." expected.")
+					  .." expected, got "..tk.Type..".")
 			end
 		end
 	end
@@ -929,7 +983,6 @@ local function CreateLuaParser(tokens)
 			curNode = simpleexpr()
 			assert(curNode, "nil simpleexpr")
 		end
-
 		-- Apply Precedence Recursion Chain
 		while isBinop() and BinaryPriority[peek().Source][1] > limit do
 			local opTk = get()
@@ -1261,6 +1314,23 @@ local function CreateLuaParser(tokens)
 		}
 	end
 
+	-- Goto statement
+	local function gotostat()
+		local gotoKw = get()
+		local gotoTo = get()
+		return {
+			Type = 'GotoStat';
+			Token_Goto = gotoKw;
+			Token_Marker = gotoTo;
+			GetFirstToken = function(self)
+				return self.Token_Goto
+			end;
+			GetLastToken = function(self)
+				return self.Token_Marker
+			end;
+		}
+	end
+
 	-- Break statement
 	local function breakstat()
 		local breakKw = get()
@@ -1291,6 +1361,21 @@ local function CreateLuaParser(tokens)
 		}
 	end
 
+	-- Statement for label (EBNF contains this as part of statement)
+	local function labelstat()
+		local label = get()
+		return {
+			Type = 'LabelStat';
+			Token_Label = label;
+			GetFirstToken = function(self)
+				return self.Token_Label
+			end;
+			GetLastToken = function(self)
+				return self.Token_Label
+			end;
+		}
+	end
+
 	-- Expression
 	local function statement()
 		local tok = peek()
@@ -1308,12 +1393,16 @@ local function CreateLuaParser(tokens)
 			return false, funcdecl(false)
 		elseif tok.Source == 'local' then
 			return false, localdecl()
+		elseif tok.Source == 'goto' and peek(1).Type == "Ident" then
+			return true, gotostat()
 		elseif tok.Source == 'return' then
 			return true, retstat()
 		elseif tok.Source == 'break' then
 			return true, breakstat()
 		elseif tok.Source == 'continue' then
 			return true, continuestat()
+		elseif tok.Type == 'GotoLabel' then
+			return false, labelstat()
 		else
 			return false, exprstat()
 		end
@@ -1375,7 +1464,9 @@ local function VisitAst(ast, visitors)
 
 	local StatType = lookupify{
 		'StatList';
+		'LabelStat';
 		'ContinueStat';
+		'GotoStat';
 		'BreakStat';
 		'ReturnStat';
 		'LocalVarStat';
@@ -1479,8 +1570,15 @@ local function VisitAst(ast, visitors)
 			for _, ch in pairs(stat.StatementList) do
 				visitStat(ch)
 			end
+		elseif stat.Type == 'LabelStat' then
+			do_nothing() -- No children to visit
+
 		elseif stat.Type == 'BreakStat' or stat.Type == 'ContinueStat' then
 			do_nothing() -- No children to visit
+
+		elseif stat.Type == 'GotoStat' then
+			do_nothing() -- Children is ident, no reason to visit it
+
 		elseif stat.Type == 'ReturnStat' then
 			for _, expr in pairs(stat.ExprList) do
 				visitExpr(expr)
@@ -1794,18 +1892,11 @@ local function AddVariableInfo(ast)
 			-- the form `function foo()` with no additional dots/colons in the 
 			-- name chain.
 			local nameChain = stat.NameChain
-			local var
-			if #nameChain == 1 then
-				-- If there is only one item in the name chain, then the first item
-				-- is a reference to a global variable.
-				var = addGlobalReference(nameChain[1].Source, function(name)
-					nameChain[1].Source = name
-				end)
-			else
-				var = referenceVariable(nameChain[1].Source, function(name)
-					nameChain[1].Source = name
-				end)
-			end
+			
+			-- Local can be defined at the top of scope
+			local var = referenceVariable(nameChain[1].Source, function(name)
+				nameChain[1].Source = name
+			end)
 			var.AssignedTo = true
 			pushScope()
 			for index, ident in pairs(stat.ArgList) do
@@ -2005,10 +2096,15 @@ local function PrintAst(ast, tbl_out)
 					printt(stat.SemicolonList[index])
 				end
 			end
+		elseif stat.Type == 'LabelStat' then
+			printt(stat.Token_Label)
 		elseif stat.Type == 'BreakStat' then
 			printt(stat.Token_Break)
 		elseif stat.Type == 'ContinueStat' then
 			printt(stat.Token_Continue)
+		elseif stat.Type == 'GotoStat' then
+			printt(stat.Token_Goto)
+			printt(stat.Token_Marker)
 		elseif stat.Type == 'ReturnStat' then
 			printt(stat.Token_Return)
 			for index, expr in pairs(stat.ExprList) do
@@ -2344,10 +2440,15 @@ local function FormatAst(ast)
 				formatStat(_stat)
 				applyIndent(_stat:GetFirstToken())
 			end
-
+		elseif stat.Type == 'LabelStat' then
+			--(stat.Token_Label)
+			do_nothing()
 		elseif stat.Type == 'BreakStat' or stat.Type == 'ContinueStat' then
-			do_nothing() --(stat.Token_Break)
-
+			--(stat.Token_Break)
+			do_nothing()
+		elseif stat.Type == 'GotoStat' then
+			--(stat.Token_Goto)
+			padToken(stat.Token_Marker)
 		elseif stat.Type == 'ReturnStat' then
 			--(stat.Token_Return)
 			for index, expr in pairs(stat.ExprList) do
@@ -2568,11 +2669,14 @@ local function StripAst(ast)
 		--  Touching words: `a b` -> `ab` is invalid
 		--  Touching digits: `2 3`, can't occur in the Lua syntax as number literals aren't a primary expression
 		--  Ambiguous syntax: `f(x)\n(x)()` is already disallowed, we can't cause a problem by removing newlines
+		--  String concat "str1"..a-1.."str2" or "str1"..1-a.."str2" not valid syntax
 
 		-- Figure out what separation is needed
 		if
 			(lastCh == '-' and firstCh == '-') or
-			(AllIdentChars[lastCh] and AllIdentChars[firstCh])
+			(AllIdentChars[lastCh] and AllIdentChars[firstCh]) or
+			(tokenA.Type == "Symbol" and tokenA.Source == '..' and tokenB.Type == "Number") or
+			(tokenA.Type == "Number" and tokenB.Type == "Symbol" and tokenB.Source == '..')
 		then
 			tokenB.LeadingWhite = ' ' -- Use a separator
 		else
@@ -2731,12 +2835,18 @@ local function StripAst(ast)
 				stript(stat.StatementList[1]:GetFirstToken())
 			end
 
+		elseif stat.Type == 'LabelStat' then
+			stript(stat.Token_Label)
+
 		elseif stat.Type == 'BreakStat' then
 			stript(stat.Token_Break)
 
 		elseif stat.Type == 'ContinueStat' then
 			stript(stat.Token_Continue)
 			
+		elseif stat.Type == 'GotoStat' then
+			joint(stat.Token_Goto, stat.Token_Marker)
+
 		elseif stat.Type == 'ReturnStat' then
 			stript(stat.Token_Return)
 			for index, expr in pairs(stat.ExprList) do
@@ -2956,7 +3066,7 @@ local function MinifyVariables(globalScope, rootScope)
 
 	-- First we want to rename all of the variables to unique temporaries, so that we can
 	-- easily use the scope::GetVar function to check whether renames are valid.
-	local temporaryIndex = 0
+	--local temporaryIndex = 0
 	for _, var in pairs(globalScope) do
 		if var.AssignedTo then
 			--var:Rename('_TMP_'..temporaryIndex..'_')
@@ -3005,7 +3115,6 @@ local function MinifyVariables(globalScope, rootScope)
 	doRenameScope(rootScope)
 end
 
---[[
 local function MinifyVariables_2(globalScope, rootScope)
 	-- Variable names and other names that are fixed, that we cannot use
 	-- Either these are Lua keywords, or globals that are not assigned to,
@@ -3188,7 +3297,128 @@ local function MinifyVariables_2(globalScope, rootScope)
 	--
 	--error()
 end
---]]
+
+local function MinifyVariables_3(globalScope, rootScope)
+	local globals = {}
+	for kw in pairs(Keywords) do
+		globals[kw] = true
+	end
+	local scope = {}
+	for _, var in pairs(globalScope) do
+		if var.AssignedTo then -- prepare global scope i.e. level 0
+			scope[var.Name] = { { var }, #var.ReferenceLocationList }
+		else -- prepare globals
+			globals[var.Name] = #var.ReferenceLocationList
+		end
+	end
+
+	local variables = {}
+	local function DeepNest(nest, scope)
+		local deepscope = {}
+		for key, value in pairs(scope) do -- copy previous scope
+			deepscope[key] = value
+		end
+		for _, var in pairs(nest.VariableList) do -- verify local variables
+			table.insert(variables, var)
+			local varName = var.Name
+			if not globals[varName] then
+				if not deepscope[varName] then -- if this variable only exists in this scope, define use count
+					deepscope[varName] = { { var }, #var.ReferenceLocationList }
+				else -- if this variable exists in top scope iterate use count,
+					table.insert(deepscope[varName][1], var)
+					deepscope[varName][2] = deepscope[varName][2] + #var.ReferenceLocationList
+				end
+				var.RefCount = deepscope[varName][2]
+			else -- Add global variable use count
+				globals[varName] = globals[varName] + #var.ReferenceLocationList
+				var.RefCount = globals[varName]
+			end
+		end
+		nest.NestedVariables = deepscope -- store this data
+		for _, childScope in pairs(nest.ChildScopeList) do
+			DeepNest(childScope, deepscope)
+		end
+	end
+	DeepNest(rootScope, scope)
+
+	local nextFreeNameIndex = 0
+	table.sort(variables, function(a,b) return a.RefCount > b.RefCount end)
+	for _, var in pairs(variables) do
+		if globals[var.Name] and var.Type == "Global" then
+			local varName
+			repeat
+				varName = indexToVarName(nextFreeNameIndex)
+				nextFreeNameIndex = nextFreeNameIndex + 1
+			until not Keywords[varName] and not globals[varName]
+			local prevName = var.Name
+			var:Rename(varName)
+			var.Renamed = true
+			globals[varName] = globals[prevName]
+			globals[prevName] = nil
+		end
+	end
+
+	rootScope.FirstFreeName = nextFreeNameIndex
+	local function LocalRename(nest, scope)
+		--[[local varlevels, varnames = {}, {}
+		for varName, count in pairs(nest.NestedVariables) do
+			varlevels[#varlevels + 1] = {varName, count}
+		end
+		table.sort(varlevels, function(a,b) return a[2] > b[2] end)
+		for top, varinfo in pairs(varlevels) do
+			varnames[varinfo[1] ] = top
+		end
+		for _, var in pairs(nest.VariableList) do
+			if not globals[var.Name] and nest.NestedVariables[var.Name] and not scope[var.Name] then
+			end
+		end]]
+		local arguments = {}
+		for _, var in pairs(nest.VariableList) do
+			--[[local type = var.Info.Type
+			if type == "Argument" then -- its function argument, that can safe redefine underscope locals
+				arguments[#arguments + 1] = var
+				
+			elseif type == "Local" then -- its local variable]]
+				if var.Name ~= 'self' then -- in case when we have metafunction self can't be redefined
+				-- @TODO: local a=self a:metamethods(...)
+
+				--[[local vars = nest.NestedVariables[var.Name]
+				if vars and not vars[3] and var.Info.Type ~= "Argument" then
+					print(var.Name, var.Info.Type)
+					vars[3] = true
+					local varName1
+					repeat
+						varName1 = indexToVarName(nest.FirstFreeName)
+						nest.FirstFreeName = nest.FirstFreeName + 1
+					until not Keywords[varName1] and not globals[varName1]
+					for _, var in ipairs(vars[1]) do
+						if not var.Renamed then
+							var:Rename(varName1)
+							var.Renamed = false
+						end
+					end
+				else]]if not var.Renamed and not globals[var.Name] then
+						local varName1
+						repeat
+							varName1 = indexToVarName(nest.FirstFreeName)
+							nest.FirstFreeName = nest.FirstFreeName + 1
+						until not Keywords[varName1] and not globals[varName1] and not scope[varName1]
+						if scope[var.Name] then
+							scope[varName1] = scope[var.Name]
+							scope[var.Name] = nil
+						end
+						var:Rename(varName1)
+						var.Renamed = true
+					end
+			end
+		end
+		for _, childScope in pairs(nest.ChildScopeList) do
+			childScope.FirstFreeName = nest.FirstFreeName
+			LocalRename(childScope, scope)
+		end
+	end
+	LocalRename(rootScope, scope)
+end
 
 local function BeautifyVariables(globalScope, rootScope)
 	-- externalGlobals isn't used anywhere, so this setup seems pointless
@@ -3251,7 +3481,8 @@ end
 
 -- Enable this file to be used as a module:
 -- If it gets loaded via require(), return a module table with exported entities
-if debug.getinfo(2, "n").name == "require" then
+local calledfrom = debug.getinfo(2, "n").name
+if calledfrom == "require" or calledfrom == "include" then
 	return {
 		AddVariableInfo = AddVariableInfo,
 		AstToString = AstToString,
@@ -3261,8 +3492,8 @@ if debug.getinfo(2, "n").name == "require" then
 		CreateLuaTokenStream = CreateLuaTokenStream,
 		FormatAst = FormatAst,
 		FormatTable = FormatTable,
-		GlobalRenameIgnore = GlobalRenameIgnore,
-		MinifyVariables = MinifyVariables,
+		-- GlobalRenameIgnore = GlobalRenameIgnore,
+		MinifyVariables = MinifyVariables_3,
 		PrintAst = PrintAst,
 		StripAst = StripAst,
 	}
@@ -3279,7 +3510,7 @@ if not sourceFile then
 end
 
 local function minify(ast, global_scope, root_scope)
-	MinifyVariables(global_scope, root_scope)
+	MinifyVariables_3(global_scope, root_scope)
 	StripAst(ast)
 	PrintAst(ast)
 end
@@ -3301,15 +3532,3 @@ elseif args[1] == 'unminify' then
 else
 	usageError()
 end
-
---[[
-module("minifier",package.seeall)
-function minifyfile(filen)
-	local data = file.Read(filen,'GAME')
-	if data then
-		local ast = CreateLuaParser(data)
-		local global_scope, root_scope = AddVariableInfo(ast)
-		minify(ast, global_scope, root_scope)
-	end
-end
-]]
